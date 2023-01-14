@@ -31,7 +31,8 @@
       : 0;
 
   $: arr = contractProductValue / cycle;
-  // 回款
+
+  // how many payment get back?
   export let payment = 3000;
 
   // 回款比例
@@ -52,13 +53,14 @@
     { id: "hybrid", text: `产品加服务 Hybrid` },
   ];
 
-  export let commissionRate = {
+  export const commissionRate = {
     "employment-sourcer": 0.04,
     "employment-sales": 0.2,
     "partner-sourcer": 0.04,
     "partner-sales": 0.49,
     "contractor-sourcer": 0.04,
     "contractor-sales": 0.49,
+    "employment-bonus": 0.05,
   };
 
   const getCommissionRate = (personnelType, role) => {
@@ -66,14 +68,16 @@
   };
 
   $: sourcerSQC = sqr * getCommissionRate(whoSourcingType, "sourcer");
-  $: salesSQC = sqr * getCommissionRate(getCommissionRate, "sales");
+  $: salesSQC = sqr * getCommissionRate(whoSalesType, "sales");
+
+  $: bonusPool = sqr * getCommissionRate("employment", "bonus");
 </script>
 
 <main>
-  <h1 class="text-3xl font-bold underline">提成计算器 Commision Calculator</h1>
+  <h1 class="text-3xl font-bold underline">Commision Calculator</h1>
   <!-- <p>Visit the <a href="https://svelte.dev/tutorial">Svelte tutorial</a> to learn how to build Svelte apps.</p> -->
   <form>
-    <table>
+    <table border="1" cellspacing="0">
       <tr>
         <td>
           <label for="tcv">有多少合同总价值(TCV, Total Contract Value)?</label>
@@ -141,61 +145,145 @@
           </td>
         </tr>
       {/if}
+
+      <tr>
+        <td>
+          <label for="cycle">合同周期多少个月(Cycle)?</label>
+        </td>
+        <td>
+          <input name="cycle" type="number" bind:value={cycle} />
+        </td>
+      </tr>
+
+      <tr>
+        <td> 合同总年度经常性收入(ARR) </td>
+        <td>
+          {arr}
+        </td>
+      </tr>
+      <tr>
+        <td>
+          合同总价值(TCV): {tcv}
+        </td>
+        <td>
+          {tcv}
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label for="payment">回款 Payment?</label>
+        </td>
+        <td>
+          <input name="payment" type="number" bind:value={payment} />
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label for="paymentRatio">回款比例 Payment Ratio?</label>
+        </td>
+        <td>
+          {paymentRatio * 100}%
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label for="whoSourcingType">谁开发的(Sourcer)？</label>
+        </td>
+        <td>
+          <select name="whoSourcingType" bind:value={whoSourcingType}>
+            {#each personnelTypes as personnelType}
+              <option value={personnelType.id}>
+                {personnelType.text}
+              </option>
+            {/each}
+          </select>
+        </td>
+      </tr>
+
+      <tr>
+        <td>
+          <label for="whoSalesType">谁销售的(Sales)？</label>
+        </td>
+        <td>
+          <select name="whoSalesType" bind:value={whoSalesType}>
+            {#each personnelTypes as personnelType}
+              <option value={personnelType.id}>
+                {personnelType.text}
+              </option>
+            {/each}
+          </select>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label for="sqr">销售确认收入 (SQR, Sales Qualified Revenue)？</label>
+        </td>
+        <td>
+          {sqr}
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Sourcer提成率：</label>
+        </td>
+        <td>
+          {getCommissionRate(whoSourcingType, "sourcer") * 100}%
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label for="sourcerSQC">Sourcer可提成收入 (SQC)?</label>
+        </td>
+        <td>
+          {sourcerSQC}
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Sales提成率：</label>
+        </td>
+        <td>
+          {getCommissionRate(whoSalesType, "sales") * 100}%
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label for="salesSQC">Sales可提成收入 (SQC)?</label>
+        </td>
+        <td>
+          {salesSQC}
+        </td>
+      </tr>
+      <tr>
+        <td />
+        <td />
+      </tr>
+      <tr>
+        <td />
+        <td />
+      </tr>
+      <tr>
+        <td>
+          <label for="bonus">计入奖金池? (Bonus)</label>
+        </td>
+        <td>
+          {bonusPool}
+        </td>
+      </tr>
     </table>
-
-    <label for="cycle">合同周期多少个月(Cycle)?</label>
-    <input name="cycle" type="number" bind:value={cycle} />
-
-    <p>合同总年度经常性收入(ARR): {arr}</p>
-
-    <p>合同总价值(TCV): {tcv}</p>
-
-    <label for="payment">回款 Payment?</label>
-    <input name="payment" type="number" bind:value={payment} />
-
-    <label for="paymentRatio">回款比例 Payment Ratio?</label>
-    {paymentRatio * 100}%
-
-    <div class="columns-2">
-      <span><label for="whoSourcingType">谁开发的(Sourcer)？</label></span>
-      <span>
-        <select name="whoSourcingType" bind:value={whoSourcingType}>
-          {#each personnelTypes as personnelType}
-            <option value={personnelType.id}>
-              {personnelType.text}
-            </option>
-          {/each}
-        </select>
-      </span>
-    </div>
-
-    <label for="whoSalesType">谁销售的(Sales)？</label>
-    <select name="whoSalesType" bind:value={whoSalesType}>
-      {#each personnelTypes as personnelType}
-        <option value={personnelType.id}>
-          {personnelType.text}
-        </option>
-      {/each}
-    </select>
-
-    <label for="sqr">销售确认收入 (SQR, Sales Qualified Revenue)？</label>
-    {sqr}
-
-    <label>Sourcer提成率：</label>
-    {getCommissionRate(whoSourcingType, "sourcer")}
-
-    <label for="sourcerSQC">Sourcer可提成收入 (SQC)?</label>
-    {sourcerSQC}
-
-    <label>Sales提成率：</label>
-    {getCommissionRate(whoSalesType, "sales")}
-
-    <label for="salesSQC">Sales可提成收入 (SQC)?</label>
-    {salesSQC}
   </form>
+
+  <h1>Commission Rate Table</h1>
+  <table>
+    {#each Object.entries(commissionRate) as [key, value]}
+      <tr>
+        <td>{key}</td>
+        <td>{value * 100}%</td>
+      </tr>
+    {/each}
+  </table>
 </main>
 
-<!-- 
 <style>
   main {
     text-align: left;
@@ -216,4 +304,4 @@
       max-width: none;
     }
   }
-</style> -->
+</style>

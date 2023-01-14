@@ -1,6 +1,4 @@
 <script>
-  import "app.css";
-
   /**
    * total contract value
    * 合同总价值
@@ -199,10 +197,10 @@
 </script>
 
 <main>
-  <h1 class="text-3xl font-bold underline">Commission Calculator</h1>
+  <h1>Commission Calculator</h1>
   <!-- <p>Visit the <a href="https://svelte.dev/tutorial">Svelte tutorial</a> to learn how to build Svelte apps.</p> -->
   <form>
-    <table border="1" cellspacing="0">
+    <table border="1" cellspacing="1">
       <tr>
         <td>
           <label for="tcv">
@@ -316,14 +314,6 @@
         </tr>
       {/if}
 
-      <tr>
-        <td>
-          合同总价值(TCV): {tcv}
-        </td>
-        <td>
-          {tcv}
-        </td>
-      </tr>
       <tr>
         <td>
           <label for="payment">
@@ -505,7 +495,7 @@
     {/each}
   </table>
 </main>
-
+<!-- 
 <style>
   main {
     text-align: left;
@@ -526,4 +516,4 @@
       max-width: none;
     }
   }
-</style>
+</style> -->

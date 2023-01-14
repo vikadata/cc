@@ -234,7 +234,7 @@
   /**
    * 合作伙伴、兼职雇员级别选择
    */
-  $: partnersLevel= [
+  $: partnersLevel = [
     { id: "b", text: `普通级` },
     { id: "a", text: `A级` },
     { id: "s", text: `S级` },
@@ -243,7 +243,7 @@
   /**
    * 合作伙伴、兼职雇员级别
    */
-  $: partnerLevel = 'b'; //
+  $: partnerLevel = "b"; //
 
   /**
    * TODO: 补偿compensation
@@ -365,13 +365,19 @@
         </tr>
 
         <tr>
-          <td> 合同总年度经常性收入(ARR) </td>
+          <td>
+            ARR (Annual Recurring Revenue)
+            <br />合同总年度经常性收入
+          </td>
           <td>
             {arr}
           </td>
         </tr>
         <tr>
-          <td> 合同月化经常性收入(MRR) </td>
+          <td>
+            MRR (Monthly Recurring Revenue)
+            <br />合同月化经常性收入
+          </td>
           <td>
             {mrr}
           </td>
@@ -404,7 +410,11 @@
       </tr>
       <tr>
         <td>
-          <label for="whoSourcingType">谁开发的(Sourcer)？</label>
+          <label for="whoSourcingType">
+            Sourcer
+            <br />
+            谁开发的?
+          </label>
         </td>
         <td>
           <select name="whoSourcingType" bind:value={sourcerType}>
@@ -419,7 +429,11 @@
 
       <tr>
         <td>
-          <label for="whoSalesType">谁销售的(Sales)？</label>
+          <label for="whoSalesType">
+            Sales
+            <br />
+            谁销售的？
+          </label>
         </td>
         <td>
           <select name="whoSalesType" bind:value={salesType}>
@@ -453,25 +467,25 @@
       {/if}
 
       {#if salesType == "partner" || salesType == "contractor"}
-      <tr>
-        <td>
-          <label for="partnerLevel">
-            Partner(Contractor) Type
-            <br />
-            合作级别
-          </label>
-        </td>
-        <td>
-          <select name="partnerLevel" bind:value={partnerLevel}>
-            {#each partnersLevel as level}
-              <option value={level.id}>
-                {level.text}
-              </option>
-            {/each}
-          </select>
-        </td>
-      </tr>
-    {/if}
+        <tr>
+          <td>
+            <label for="partnerLevel">
+              Partner(Contractor) Type
+              <br />
+              合作级别
+            </label>
+          </td>
+          <td>
+            <select name="partnerLevel" bind:value={partnerLevel}>
+              {#each partnersLevel as level}
+                <option value={level.id}>
+                  {level.text}
+                </option>
+              {/each}
+            </select>
+          </td>
+        </tr>
+      {/if}
 
       <tr>
         <td>

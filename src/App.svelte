@@ -168,7 +168,8 @@
   /**
    * 销售提成率，根据不同的销售职员类型、岗位类型，提成率不同
    */
-  $: realSalesCommissionRate = salesType == "partner"
+  $: realSalesCommissionRate =
+    salesType == "partner"
       ? getCommissionRate(salesType, "sales") // partner按回款、contractor按SQR
       : salesType == "employee"
       ? getCommissionRate("employee", "sales", employeeSalesType)
@@ -188,6 +189,13 @@
    * 计入公司奖金池金额
    */
   $: bonusPool = sqr * getCommissionRate("employee", "bonus");
+
+
+  /**
+   * 公司这次回款的真实净利
+  */
+ $: netIncomeByPayment = payment - bonusPool - salesSQC - sourcerSQC;
+ $: netIncomeRatioByPayment = netIncomeByPayment / payment;
 </script>
 
 <main>
@@ -280,31 +288,34 @@
         </tr>
       {/if}
 
-      <tr>
-        <td>
-          <label for="period">
-            Contract Period
-            <br />
-            合同周期多少个月?
-          </label>
-        </td>
-        <td>
-          <input name="period" type="number" bind:value={contractPeriod} />
-        </td>
-      </tr>
+      {#if contractType != "service"}
+        <tr>
+          <td>
+            <label for="period">
+              Contract Period
+              <br />
+              合同周期多少个月?
+            </label>
+          </td>
+          <td>
+            <input name="period" type="number" bind:value={contractPeriod} />
+          </td>
+        </tr>
 
-      <tr>
-        <td> 合同总年度经常性收入(ARR) </td>
-        <td>
-          {arr}
-        </td>
-      </tr>
-      <tr>
-        <td> 合同月化经常性收入(MRR) </td>
-        <td>
-          {mrr}
-        </td>
-      </tr>
+        <tr>
+          <td> 合同总年度经常性收入(ARR) </td>
+          <td>
+            {arr}
+          </td>
+        </tr>
+        <tr>
+          <td> 合同月化经常性收入(MRR) </td>
+          <td>
+            {mrr}
+          </td>
+        </tr>
+      {/if}
+
       <tr>
         <td>
           合同总价值(TCV): {tcv}
@@ -401,11 +412,11 @@
       </tr>
       <tr>
         <td>
-          <label>
+          <span>
             Sourcer Commission Rate
             <br />
             Sourcer提成率
-          </label>
+          </span>
         </td>
         <td>
           {getCommissionRate(sourcerType, "sourcer") * 100}%
@@ -425,11 +436,11 @@
       </tr>
       <tr>
         <td>
-          <label>
+          <span>
             Sales Commission Rate
             <br />
             Sales提成率
-          </label>
+          </span>
         </td>
         <td>
           {realSalesCommissionRate * 100}%
@@ -450,14 +461,37 @@
       <tr>
         <td>
           <label for="bonus">
-			Bonus Pool
-			<br />
-			计入公司奖金池? </label>
+            Bonus Pool
+            <br />
+            计入公司奖金池?
+          </label>
         </td>
         <td>
           {bonusPool}
         </td>
       </tr>
+
+	  <tr>
+		<td>
+			Share in Payment
+			<br />
+			本次回款的公司分利
+		</td>
+		<td>
+			{payment - netIncomeByPayment} ({( (1 - netIncomeRatioByPayment)*100).toFixed(2)}%)
+		</td>
+	  </tr>
+
+	  <tr>
+		<td>
+			Net Income in Payment
+			<br />
+			本次回款的公司真实净利
+		</td>
+		<td>
+			{netIncomeByPayment} ({(netIncomeRatioByPayment*100).toFixed(2)}%)
+		</td>
+	  </tr>
     </table>
   </form>
 

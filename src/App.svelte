@@ -547,6 +547,18 @@
           {salesSQC()}
         </td>
       </tr>
+
+      <tr>
+        <td>
+          Compensation
+          <br />
+          合作补偿调节，如部分SQC中扣除某些事项
+        </td>
+        <td>
+          <input name="compensation" type="number" bind:value={compensation} />
+        </td>
+      </tr>
+
       <tr>
         <td>
           <label for="bonus">

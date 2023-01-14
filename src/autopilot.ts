@@ -20,16 +20,16 @@ const contracts = {
 // Payments
 const payments = {
     'pay1': {
-        contract: 'a';
+        contract: 'a'
     },
     'pay2': {
-        contract: 'b';
+        contract: 'b'
     }
 }
 
 
 // Amoeba
-const amoeba = {
+export const amoeba = {
     'ent': {
 
     },
@@ -39,6 +39,6 @@ const amoeba = {
 }
 
 // Amoeba Bills
-const amoebaBills = [
+export const amoebaBills = [
 
 ]

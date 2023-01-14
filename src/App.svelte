@@ -1,11 +1,6 @@
-<script>
-  export function getARR(productTCV, periodMonthly) {
-    return productTCV / periodMonthly / 12;
-  }
+<script lang="ts">
+  import * as lib from "./lib";
 
-  export function getMRR(productTCV, periodMonthly) {
-    return productTCV / periodMonthly;
-  }
   /**
    * total contract value
    * 合同总价值
@@ -115,12 +110,12 @@
   /**
    * ARR
    */
-  $: arr = getARR(contractProductValue(), contractPeriod);
+  $: arr = lib.getARR(contractProductValue(), contractPeriod);
 
   /**
    * MRR
    */
-  $: mrr = getARR(contractProductValue(), contractPeriod);
+  $: mrr = lib.getMRR(contractProductValue(), contractPeriod);
 
   /**
    * SQR 销售确认收入

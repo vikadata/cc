@@ -70,6 +70,14 @@ function calcAmoebaBalances(amoeba: string, periodType: PeriodType) {
 
 
 function doCalc() {
+    // 算出SQC，放到阿米巴，按月
+
+    // 根据SQC和其它成本bill，计算阿米巴余额，按月
+
+
+    // 生成报告
+
+
 
 
 }

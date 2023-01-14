@@ -30,11 +30,6 @@
    */
   $: salesCost = 0;
 
-  /**
-   * Contract Margin
-   * 合同毛利
-   */
-  $: contractMargin = tcv - salesCost;
 
   /**
    * sales personnel type
@@ -49,10 +44,19 @@
   export let employeeSalesType = "sme";
 
   /**
+   * 销售雇员岗位类型
+   */
+  export let employeeSalesTypes = [
+    { id: "sme", text: "直销 SME" },
+    { id: "ent", text: "大客户 ENT" },
+    { id: "csm", text: "客户成功 CSM" },
+  ];
+
+  /**
    * Contract Period
    * 合同周期，单位月
    */
-  export let contractPeriod = 12;
+  $: contractPeriod = 12;
 
   /**
    * 可选合同类型
@@ -73,7 +77,7 @@
    * Contract Service Value
    * 合同中的服务部分价值（排除产品价值）
    */
-  export let contractServiceValue = 0;
+  $: contractServiceValue = contractType == "service" ? tcv : 0;
 
   /**
    * 合同中的产品部分价值
@@ -91,14 +95,48 @@
   };
 
   /**
+   * 合同中的产品部分价值占比
+   */
+  $: tcvOfProductRatio = () => {
+    return contractProductValue() / tcv;
+  };
+
+  /**
+   * 合同中的服务部分价值占比
+   */
+  $: tcvOfServiceRatio = () => {
+    return contractServiceValue / tcv;
+  };
+
+  /**
    * how many payment get back?
    * 回款
    */
   $: payment = 3000;
 
   /**
+   * Payment Margin
+   * 回款毛利
+   */
+  $: paymentMargin = payment - salesCost;
+
+  /**
+   * 回款所属产品部分
+   */
+  $: paymentOfProduct = () => {
+    return paymentMargin * tcvOfProductRatio();
+  };
+
+  /**
+   * 回款所属的服务部分
+   */
+  $: paymentOfService = () => {
+    return paymentMargin * tcvOfServiceRatio();
+  };
+
+  /**
    * Payment Ratio
-   * 回款比例
+   * 回款比例 (回款比例 = 回款 / 合同总价值)
    */
   $: paymentRatio = payment / tcv;
 
@@ -118,20 +156,17 @@
   $: mrr = lib.getMRR(contractProductValue(), contractPeriod);
 
   /**
-   * SQR 销售确认收入
+   * 产品SQR 销售确认收入
    */
-  $: sqr =
-    payment / contractPeriodYearly +
-    ((payment * (contractPeriodYearly - 1)) / contractPeriodYearly) * 0.5;
+  $: sqrOfProduct =
+    paymentOfProduct() / contractPeriodYearly +
+    ((paymentOfProduct() * (contractPeriodYearly - 1)) / contractPeriodYearly) *
+      0.5;
 
   /**
-   * 销售雇员岗位类型
+   * 服务SQR 销售确认收入
    */
-  export let employeeSalesTypes = [
-    { id: "sme", text: "直销 SME" },
-    { id: "ent", text: "大客户 ENT" },
-    { id: "csm", text: "客户成功 CSM" },
-  ];
+  $: sqrOfService = paymentOfService();
 
   /**
    * 提成率表
@@ -144,15 +179,20 @@
     "employee-sales-ent": 0.3,
     "employee-sales-csm": 0.2,
 
+    /**
+     * 渠道经理
+     */
+    "employee-partnersales": 0.3,
+
     "partner-sourcer": 0,
-    "partner-sales": 0.49,
-    "partner-sales-b": 0.49,
+    "partner-sales": 0.51,
+    "partner-sales-b": 0.51,
     "partner-sales-a": 0.61,
     "partner-sales-s": 0.71,
 
     "contractor-sourcer": 0.1,
-    "contractor-sales": 0.49,
-    "contractor-sales-b": 0.49,
+    "contractor-sales": 0.51,
+    "contractor-sales-b": 0.51,
     "contractor-sales-a": 0.61,
     "contractor-sales-s": 0.71,
 
@@ -160,6 +200,12 @@
      * 交付/服务/实施，统归客户成功
      */
     "employee-csm": 0.2,
+
+    /**
+     * 独立的付费交付服务合同的提成率
+     * 给到Partner和Contractor
+     */
+    "employee-service": 1,
 
     /**
      * 雇员奖金池
@@ -182,7 +228,9 @@
    * Sourcer的SQC，计提阿米巴
    */
   $: sourcerSQC = () => {
-    return sqr * getCommissionRate(sourcerType, "sourcer");
+    // TODO: 我们开发的线索，给到Partners，我们的怎么分？
+
+    return sqrOfProduct * getCommissionRate(sourcerType, "sourcer");
   };
 
   /**
@@ -201,11 +249,11 @@
    */
   $: salesSQC = () => {
     if (salesType == "partner") {
-      return payment * realSalesCommissionRate(); // partner按回款、contractor按SQR
+      return paymentMargin * realSalesCommissionRate(); // partner按回款、contractor按SQR
     } else if (salesType == "employee") {
-      return sqr * realSalesCommissionRate();
+      return sqrOfProduct * realSalesCommissionRate();
     } else {
-      return sqr * realSalesCommissionRate();
+      return sqrOfProduct * realSalesCommissionRate();
     }
   };
 
@@ -213,16 +261,25 @@
    * 计入公司奖金池金额
    */
   $: bonusPool = () => {
-    return sqr * getCommissionRate("employee", "bonus");
+    return sqrOfProduct * getCommissionRate("employee", "bonus");
   };
 
   /**
-   * TODO: 交付、服务人员SQC
+   * TODO: 交付、服务人员SQC ,即SE/CSM/KU
    */
-  $: csmSQC = 0;
+  $: csmSQC = () => {
+    return contractServiceValue * getCommissionRate("employee", "csm");
+  };
 
   /**
-   * TODO: 渠道服务人员SQC
+   * 付费的服务的SQC
+   */
+  $: payServiceSQC = () => {
+    return sqrOfService * getCommissionRate("employee", "service");
+  };
+
+  /**
+   * TODO: 渠道经理SQC、分成
    */
   $: partnerSalesSQC = 0;
 
@@ -235,9 +292,9 @@
    * 合作伙伴、兼职雇员级别选择
    */
   $: partnersLevel = [
-    { id: "b", text: `普通级` },
-    { id: "a", text: `A级` },
-    { id: "s", text: `S级` },
+    { id: "b", text: `铜牌级(B)` },
+    { id: "a", text: `银牌级(A)` },
+    { id: "s", text: `金牌级(S)` },
   ];
 
   /**
@@ -254,7 +311,8 @@
   /**
    * 公司这次回款的真实净利
    */
-  $: netIncomeByPayment = payment - bonusPool() - salesSQC() - sourcerSQC();
+  $: netIncomeByPayment =
+    payment - salesCost - bonusPool() - salesSQC() - sourcerSQC();
   $: netIncomeRatioByPayment = netIncomeByPayment / payment;
 </script>
 
@@ -276,33 +334,7 @@
         </td>
       </tr>
 
-      <tr>
-        <td>
-          <label for="salesCost">
-            Sales Cost
-            <br />
-            销售成本, 为完成本项目交付 <br />
-            支付费用采购的第三方服务、软件、硬件费用
-          </label>
-        </td>
-        <td>
-          <input name="salesCost" type="number" bind:value={salesCost} />
-        </td>
-      </tr>
-      <tr>
-        <td>
-          <label for="contractMargin">
-            Contract Margin
-            <br />
-            合同毛利
-          </label>
-        </td>
-
-        <td>
-          {contractMargin}
-        </td>
-      </tr>
-      <tr>
+      <!-- <tr>
         <td>
           <label for="contractType">
             Contract Type
@@ -319,7 +351,7 @@
             {/each}
           </select>
         </td>
-      </tr>
+      </tr> -->
 
       {#if contractType == "hybrid"}
         <tr>
@@ -396,6 +428,34 @@
           <input name="payment" type="number" bind:value={payment} />
         </td>
       </tr>
+
+      <tr>
+        <td>
+          <label for="salesCost">
+            Sales Cost
+            <br />
+            销售成本, 为完成本项目交付 <br />
+            支付费用采购的第三方服务、软件、硬件费用
+          </label>
+        </td>
+        <td>
+          <input name="salesCost" type="number" bind:value={salesCost} />
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label for="paymentMargin">
+            Payment Margin
+            <br />
+            回款毛利
+          </label>
+        </td>
+
+        <td>
+          {paymentMargin}
+        </td>
+      </tr>
+
       <tr>
         <td>
           <label for="paymentRatio">
@@ -408,12 +468,39 @@
           {paymentRatio * 100}%
         </td>
       </tr>
-      <tr>
+
+      {#if contractType == "hybrid" || contractType == "product"}
+        <tr>
+          <td>
+            Payment of Product
+            <br />
+            回款的产品部分
+          </td>
+          <td>
+            {paymentOfProduct()}
+          </td>
+        </tr>
+      {/if}
+
+      {#if contractType == "hybrid" || contractType == "service"}
+        <tr>
+          <td>
+            Payment of Service
+            <br />
+            回款的服务部分
+          </td>
+          <td>
+            {paymentOfService()}
+          </td>
+        </tr>
+      {/if}
+
+      <!-- <tr>
         <td>
           <label for="whoSourcingType">
             Sourcer
             <br />
-            谁开发的?
+            线索谁开发的?
           </label>
         </td>
         <td>
@@ -425,14 +512,14 @@
             {/each}
           </select>
         </td>
-      </tr>
+      </tr> -->
 
       <tr>
         <td>
           <label for="whoSalesType">
             Sales
             <br />
-            谁销售的？
+            订单谁销售的？
           </label>
         </td>
         <td>
@@ -487,18 +574,30 @@
         </tr>
       {/if}
 
-      <tr>
-        <td>
-          <label for="sqr">
-            SQR (Sales Qualified Revenue)
-            <br />
-            销售确认收入 ？
-          </label>
-        </td>
-        <td>
-          {sqr}
-        </td>
-      </tr>
+      {#if contractType == "hybrid" || contractType == "product"}
+        <tr>
+          <td>
+            <label for="sqr">
+              产品SQR (Sales Qualified Revenue)
+              <br />
+              销售确认收入 ？
+            </label>
+          </td>
+          <td>
+            {sqrOfProduct}
+          </td>
+        </tr>
+      {/if}
+
+      {#if contractType == "hybrid" || contractType == "service"}
+        <tr>
+          <td>服务SQR</td>
+          <td>
+            {sqrOfService}
+          </td>
+        </tr>
+      {/if}
+
       <tr>
         <td>
           <span>
@@ -541,12 +640,82 @@
             Sales SQC (Sales Qualified Commission)
             <br />
             Sales计提多少阿米巴收入?
+
+            <!-- Partner/Contractor Commission
+            <br />
+            伙伴计提多少提成? -->
           </span>
         </td>
         <td>
           {salesSQC()}
         </td>
       </tr>
+
+      <tr>
+        <td>
+          <span>
+
+            Partner Sales SQC (Sales Qualified Commission)
+            <br />
+            渠道销售计提多少阿米巴收入?
+            
+          </span>
+        </td>
+        <td>
+          
+        </td>
+      </tr>
+
+      <tr>
+        <td>
+          <span>
+            Partner Sales Commission Rate
+            <br />
+            渠道销售提成率
+          </span>
+        </td>
+        <td>
+          
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <span>
+            CSM/SE/CS SQC (Sales Qualified Commission)
+            <br />
+            KU服务方计提多少阿米巴收入?
+          </span>
+        </td>
+        <td>
+        </td>
+      </tr>
+
+      <tr>
+        <td>
+          <span>
+            CSM/SE/CS Commission Rate
+            <br />
+            KU服务方提成率
+          </span>
+        </td>
+        <td>
+        </td>
+      </tr>
+
+      {#if contractType == "hybrid" || contractType == "service"}
+        <tr>
+          <td>
+            <span>
+              Pay Service SQC
+              <br />
+              付费服务提成
+            </span>
+          </td>
+          <td>
+            {payServiceSQC()}
+          </td>
+        </tr>
+      {/if}
 
       <tr>
         <td>

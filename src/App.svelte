@@ -133,24 +133,36 @@
    */
   export const commissionRate = {
     "employee-sourcer": 0.1,
+
     "employee-sales": 0.3,
     "employee-sales-sme": 0.3,
     "employee-sales-ent": 0.3,
     "employee-sales-csm": 0.2,
-    "partner-sourcer": 0.1,
+
+    "partner-sourcer": 0,
     "partner-sales": 0.49,
+
     "contractor-sourcer": 0.1,
     "contractor-sales": 0.49,
+    "contractor-sales-b": 0.49,
+    "contractor-sales-a": 0.6,
+    "contractor-sales-s": 0.7,
+
+    /**
+     * 交付/服务/实施，统归客户成功
+     */
+    "employee-csm": 0.2,
+
+    /**
+     * 雇员奖金池
+     */
     "employee-bonus": 0.05,
   };
 
   /**
-   * 获取提成率
-   * @param personnelType
-   * @param role
-   * @param extra
+   * 根据职员、岗位、额外属性，提取提成率
    */
-  const getCommissionRate = (personnelType, role, extra) => {
+  $: getCommissionRate = (personnelType, role, extra) => {
     const key =
       extra === undefined
         ? `${personnelType}-${role}`
@@ -166,34 +178,56 @@
   /**
    * 销售提成率，根据不同的销售职员类型、岗位类型，提成率不同
    */
-  $: realSalesCommissionRate =
-    salesType == "partner"
-      ? getCommissionRate(salesType, "sales") // partner按回款、contractor按SQR
-      : salesType == "employee"
-      ? getCommissionRate("employee", "sales", employeeSalesType)
-      : getCommissionRate(salesType, "sales");
+  $: realSalesCommissionRate = () => {
+    if (salesType == "partner") {
+      return getCommissionRate(salesType, "sales"); // partner按回款、contractor按SQR
+    } else if (salesType == "employee") {
+      return getCommissionRate("employee", "sales", employeeSalesType);
+    } else {
+      return getCommissionRate(salesType, "sales");
+    }
+  };
 
   /**
    * Sales的SQC，计提阿米巴
    */
-  $: salesSQC =
-    salesType == "partner"
-      ? payment * realSalesCommissionRate // partner按回款、contractor按SQR
-      : salesType == "employee"
-      ? sqr * realSalesCommissionRate
-      : sqr * realSalesCommissionRate;
+  $: salesSQC = () => {
+    if (salesType == "partner") {
+      return payment * realSalesCommissionRate(); // partner按回款、contractor按SQR
+    } else if (salesType == "employee") {
+      return sqr * realSalesCommissionRate();
+    } else {
+      return sqr * realSalesCommissionRate();
+    }
+  };
 
   /**
    * 计入公司奖金池金额
    */
-  $: bonusPool = sqr * getCommissionRate("employee", "bonus");
+  $: bonusPool = () => {
+    return sqr * getCommissionRate("employee", "bonus");
+  };
 
+  /**
+   * TODO: 交付、服务人员SQC
+   */
+  $: csmSQC = 0;
+
+  /**
+   * TODO: 渠道服务人员SQC
+   */
+  $: partnerSalesSQC = 0;
+
+  /**
+   * TODO: 合作伙伴收入
+   */
+  $: partnerIncome = 0;
 
   /**
    * 公司这次回款的真实净利
-  */
- $: netIncomeByPayment = payment - bonusPool - salesSQC - sourcerSQC;
- $: netIncomeRatioByPayment = netIncomeByPayment / payment;
+   */
+  $: netIncomeByPayment = payment - bonusPool() - salesSQC() - sourcerSQC;
+  $: netIncomeRatioByPayment = netIncomeByPayment / payment;
 </script>
 
 <main>
@@ -433,19 +467,19 @@
           </span>
         </td>
         <td>
-          {realSalesCommissionRate * 100}%
+          {realSalesCommissionRate() * 100}%
         </td>
       </tr>
       <tr>
         <td>
-          <label for="salesSQC">
+          <span>
             Sales SQC (Sales Qualified Commission)
             <br />
             Sales计提多少阿米巴收入?
-          </label>
+          </span>
         </td>
         <td>
-          {salesSQC}
+          {salesSQC()}
         </td>
       </tr>
       <tr>
@@ -457,31 +491,34 @@
           </label>
         </td>
         <td>
-          {bonusPool}
+          {bonusPool()}
         </td>
       </tr>
 
-	  <tr>
-		<td>
-			Share in Payment
-			<br />
-			本次回款的公司分利
-		</td>
-		<td>
-			{payment - netIncomeByPayment} ({( (1 - netIncomeRatioByPayment)*100).toFixed(2)}%)
-		</td>
-	  </tr>
+      <tr>
+        <td>
+          Share in Payment
+          <br />
+          本次回款的公司分利
+        </td>
+        <td>
+          {payment - netIncomeByPayment} ({(
+            (1 - netIncomeRatioByPayment) *
+            100
+          ).toFixed(2)}%)
+        </td>
+      </tr>
 
-	  <tr>
-		<td>
-			Net Income in Payment
-			<br />
-			本次回款的公司真实净利
-		</td>
-		<td>
-			{netIncomeByPayment} ({(netIncomeRatioByPayment*100).toFixed(2)}%)
-		</td>
-	  </tr>
+      <tr>
+        <td>
+          Net Income in Payment
+          <br />
+          本次回款的公司真实净利
+        </td>
+        <td>
+          {netIncomeByPayment} ({(netIncomeRatioByPayment * 100).toFixed(2)}%)
+        </td>
+      </tr>
     </table>
   </form>
 

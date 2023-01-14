@@ -40,5 +40,36 @@ export const amoeba = {
 
 // Amoeba Bills
 export const amoebaBills = [
-
+    {
+        amoeba: 'ent',
+        price: 10000,
+        type: 'sqc',
+    },
+    {
+        amoeba: 'ent',
+        price: -20000,
+        type: 'salary',
+    },
 ]
+
+
+enum PeriodType {
+    AllTime,
+    LastMonth,
+    CurrentMonth,
+}
+
+/**
+ * 计算所有阿米巴余额
+ */
+function calcAmoebaBalances(amoeba: string, periodType: PeriodType) {
+    for (const bill of amoebaBills) {
+
+    }
+}
+
+
+function doCalc() {
+
+
+}

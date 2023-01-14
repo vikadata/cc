@@ -5,13 +5,13 @@
    * total contract value
    * 合同总价值
    */
-  export let tcv = 10000;
+  $: tcv = 10000;
 
   /**
    * personnel type
    * 职员类型
    */
-  export let personnelTypes = [
+  $: personnelTypes = [
     { id: "employee", text: `全职雇员 Employee` },
     { id: "contractor", text: `合约雇员 Contractor` },
     { id: "partner", text: `渠道合作伙伴 Partner` },
@@ -21,14 +21,14 @@
    * the sourcing people personnel type
    * Sourcer职员类型
    */
-  export let sourcerType = "employee";
+  $: sourcerType = "employee";
 
   /**
    * 第三方销售成本
    * 服务、采购、硬件等
    * 不包括特殊费用
    */
-  export let salesCost = 0;
+  $: salesCost = 0;
 
   /**
    * Contract Margin
@@ -40,7 +40,7 @@
    * sales personnel type
    * 销售Sales的职员类型
    */
-  export let salesType = "employee";
+  $: salesType = "employee";
 
   /**
    * Sales Employee Job Type
@@ -94,7 +94,7 @@
    * how many payment get back?
    * 回款
    */
-  export let payment = 3000;
+  $: payment = 3000;
 
   /**
    * Payment Ratio
@@ -146,6 +146,9 @@
 
     "partner-sourcer": 0,
     "partner-sales": 0.49,
+    "partner-sales-b": 0.49,
+    "partner-sales-a": 0.61,
+    "partner-sales-s": 0.71,
 
     "contractor-sourcer": 0.1,
     "contractor-sales": 0.49,
@@ -167,7 +170,7 @@
   /**
    * 根据职员、岗位、额外属性，提取提成率
    */
-  $: getCommissionRate = (personnelType, role, extra) => {
+  $: getCommissionRate = (personnelType, role, extra = undefined) => {
     const key =
       extra === undefined
         ? `${personnelType}-${role}`
@@ -186,12 +189,10 @@
    * 销售提成率，根据不同的销售职员类型、岗位类型，提成率不同
    */
   $: realSalesCommissionRate = () => {
-    if (salesType == "partner") {
-      return getCommissionRate(salesType, "sales"); // partner按回款、contractor按SQR
-    } else if (salesType == "employee") {
+    if (salesType == "employee") {
       return getCommissionRate("employee", "sales", employeeSalesType);
     } else {
-      return getCommissionRate(salesType, "sales");
+      return getCommissionRate(salesType, "sales", partnerLevel); // contractor、partner分级别
     }
   };
 
@@ -229,6 +230,26 @@
    * TODO: 合作伙伴收入
    */
   $: partnerIncome = 0;
+
+  /**
+   * 合作伙伴、兼职雇员级别选择
+   */
+  $: partnersLevel= [
+    { id: "b", text: `普通级` },
+    { id: "a", text: `A级` },
+    { id: "s", text: `S级` },
+  ];
+
+  /**
+   * 合作伙伴、兼职雇员级别
+   */
+  $: partnerLevel = 'b'; //
+
+  /**
+   * TODO: 补偿compensation
+   * 渠道或兼职人员，回馈补偿、填充对价
+   */
+  $: compensation = 0;
 
   /**
    * 公司这次回款的真实净利
@@ -430,6 +451,27 @@
           </td>
         </tr>
       {/if}
+
+      {#if salesType == "partner" || salesType == "contractor"}
+      <tr>
+        <td>
+          <label for="partnerLevel">
+            Partner(Contractor) Type
+            <br />
+            合作级别
+          </label>
+        </td>
+        <td>
+          <select name="partnerLevel" bind:value={partnerLevel}>
+            {#each partnersLevel as level}
+              <option value={level.id}>
+                {level.text}
+              </option>
+            {/each}
+          </select>
+        </td>
+      </tr>
+    {/if}
 
       <tr>
         <td>

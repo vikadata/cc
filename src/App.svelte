@@ -1,4 +1,11 @@
 <script>
+  export function getARR(productTCV, periodMonthly) {
+    return productTCV / periodMonthly / 12;
+  }
+
+  export function getMRR(productTCV, periodMonthly) {
+    return productTCV / periodMonthly;
+  }
   /**
    * total contract value
    * 合同总价值
@@ -76,14 +83,17 @@
   /**
    * 合同中的产品部分价值
    */
-  $: contractProductValue =
-    contractType == "product"
-      ? tcv
-      : contractType == "service"
-      ? 0
-      : contractType == "hybrid"
-      ? tcv - contractServiceValue
-      : 0;
+  $: contractProductValue = () => {
+    if (contractType == "product") {
+      return tcv;
+    } else if (contractType == "service") {
+      return 0;
+    } else if (contractType == "hybrid") {
+      return tcv - contractServiceValue;
+    } else {
+      return 0;
+    }
+  };
 
   /**
    * how many payment get back?
@@ -100,24 +110,24 @@
   /**
    * 合同周期年化
    */
-  $: periodYearly = contractPeriod / 12; // 12个月为年化
+  $: contractPeriodYearly = contractPeriod / 12; // 12个月为年化
 
   /**
    * ARR
    */
-  $: arr = contractProductValue / periodYearly;
+  $: arr = getARR(contractProductValue(), contractPeriod);
 
   /**
    * MRR
    */
-  $: mrr = contractProductValue / contractPeriod;
+  $: mrr = getARR(contractProductValue(), contractPeriod);
 
   /**
    * SQR 销售确认收入
    */
   $: sqr =
-    payment / periodYearly +
-    ((payment * (periodYearly - 1)) / periodYearly) * 0.5;
+    payment / contractPeriodYearly +
+    ((payment * (contractPeriodYearly - 1)) / contractPeriodYearly) * 0.5;
 
   /**
    * 销售雇员岗位类型
@@ -145,8 +155,8 @@
     "contractor-sourcer": 0.1,
     "contractor-sales": 0.49,
     "contractor-sales-b": 0.49,
-    "contractor-sales-a": 0.6,
-    "contractor-sales-s": 0.7,
+    "contractor-sales-a": 0.61,
+    "contractor-sales-s": 0.71,
 
     /**
      * 交付/服务/实施，统归客户成功
@@ -173,7 +183,9 @@
   /**
    * Sourcer的SQC，计提阿米巴
    */
-  $: sourcerSQC = sqr * getCommissionRate(sourcerType, "sourcer");
+  $: sourcerSQC = () => {
+    return sqr * getCommissionRate(sourcerType, "sourcer");
+  };
 
   /**
    * 销售提成率，根据不同的销售职员类型、岗位类型，提成率不同
@@ -226,7 +238,7 @@
   /**
    * 公司这次回款的真实净利
    */
-  $: netIncomeByPayment = payment - bonusPool() - salesSQC() - sourcerSQC;
+  $: netIncomeByPayment = payment - bonusPool() - salesSQC() - sourcerSQC();
   $: netIncomeRatioByPayment = netIncomeByPayment / payment;
 </script>
 
@@ -297,7 +309,9 @@
         <tr>
           <td>
             <label for="contractServiceValue">
-              合同中的服务价值多少(Service value in this contract)?
+              Service value in this contract
+              <br />
+              合同中的服务价值多少?
             </label>
           </td>
           <td>
@@ -310,12 +324,12 @@
         </tr>
         <tr>
           <td>
-            <label for="contractProductValue"
-              >合同中的产品价值多少(Product value in this contract)?</label
-            >
+            Product value in this contract
+            <br />
+            合同中的产品价值多少?
           </td>
           <td>
-            {contractProductValue}
+            {contractProductValue()}
           </td>
         </tr>
       {/if}
@@ -427,8 +441,8 @@
           <label for="sqr">
             SQR (Sales Qualified Revenue)
             <br />
-            销售确认收入 ？</label
-          >
+            销售确认收入 ？
+          </label>
         </td>
         <td>
           {sqr}
@@ -448,14 +462,14 @@
       </tr>
       <tr>
         <td>
-          <label for="sourcerSQC">
+          <span>
             Sourcer SQC (Sales Qualified Commission)
             <br />
             Sourcer计提多少阿米巴收入?
-          </label>
+          </span>
         </td>
         <td>
-          {sourcerSQC}
+          {sourcerSQC()}
         </td>
       </tr>
       <tr>
@@ -532,6 +546,7 @@
     {/each}
   </table>
 </main>
+
 <!-- 
 <style>
   main {

@@ -1,9 +1,14 @@
 
 
-
+https://vikacc.surge.sh
+```
+make dev 
+make build
+make publish
+```
+<!-- 
 # svelte app
 
-https://vikacc.surge.sh
 
 This is a project template for [Svelte](https://svelte.dev) apps. It lives at https://github.com/sveltejs/template.
 
@@ -105,4 +110,4 @@ Then, from within your project folder:
 ```bash
 npm run build
 surge public vikacc.surge.sh
-```
+``` -->

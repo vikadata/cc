@@ -1,6 +1,8 @@
 <script lang="ts">
   import * as lib from "./lib";
 
+  import commissionRate from "./commission_rate";
+
   /**
    * total contract value
    * 合同总价值
@@ -30,12 +32,11 @@
    */
   $: salesCost = 0;
 
-
   /**
    * sales personnel type
    * 销售Sales的职员类型
    */
-  $: salesType = "employee";
+  $: salesType = "partner";
 
   /**
    * Sales Employee Job Type
@@ -169,68 +170,46 @@
   $: sqrOfService = paymentOfService();
 
   /**
-   * 提成率表
+   * 根据职员、岗位、额外属性，提取提成率对象
    */
-  export const commissionRate = {
-    "employee-sourcer": 0.1,
-
-    "employee-sales": 0.3,
-    "employee-sales-sme": 0.3,
-    "employee-sales-ent": 0.3,
-    "employee-sales-csm": 0.2,
-
-    /**
-     * 渠道经理
-     */
-    "employee-partnersales": 0.3,
-
-    "partner-sourcer": 0,
-    "partner-sales": 0.51,
-    "partner-sales-b": 0.51,
-    "partner-sales-a": 0.61,
-    "partner-sales-s": 0.71,
-
-    "contractor-sourcer": 0.1,
-    "contractor-sales": 0.51,
-    "contractor-sales-b": 0.51,
-    "contractor-sales-a": 0.61,
-    "contractor-sales-s": 0.71,
-
-    /**
-     * 交付/服务/实施，统归客户成功
-     */
-    "employee-csm": 0.2,
-
-    /**
-     * 独立的付费交付服务合同的提成率
-     * 给到Partner和Contractor
-     */
-    "employee-service": 1,
-
-    /**
-     * 雇员奖金池
-     */
-    "employee-bonus": 0.05,
-  };
-
-  /**
-   * 根据职员、岗位、额外属性，提取提成率
-   */
-  $: getCommissionRate = (personnelType, role, extra = undefined) => {
+  $: getCommissionRateObj = (personnelType, role, extra = undefined) => {
     const key =
       extra === undefined
         ? `${personnelType}-${role}`
         : `${personnelType}-${role}-${extra}`;
-    return commissionRate[key];
+    const obj = commissionRate[key];
+    return obj;
+  };
+
+  /**
+   * 根据职员、岗位、额外属性，提取提成率对象
+   */
+  $: getCommissionRate = (personnelType, role, extra = undefined) => {
+    const obj = getCommissionRateObj(personnelType, role, extra);
+    if (obj) return obj.rate;
+    return 0;
+  };
+
+  /**
+   * Sourcer的提成率
+   */
+  $: sourcerCommissionRate = () => {
+    // sourcer必须是雇员
+    return getCommissionRate(sourcerType, "sourcer", employeeSalesType);
   };
 
   /**
    * Sourcer的SQC，计提阿米巴
    */
   $: sourcerSQC = () => {
-    // TODO: 我们开发的线索，给到Partners，我们的怎么分？
+    // 我们开发的线索，给到Partners，我们的怎么分？
 
-    return sqrOfProduct * getCommissionRate(sourcerType, "sourcer");
+    if (salesType == "employee") {
+      return sqrOfProduct * sourcerCommissionRate();
+    } else {
+      // 如果是渠道合作伙伴，减掉他们的分成后，剩下的才是我们的
+      return (sqrOfProduct - salesSQC()) * sourcerCommissionRate();
+    }
   };
 
   /**
@@ -265,28 +244,62 @@
   };
 
   /**
-   * TODO: 交付、服务人员SQC ,即SE/CSM/KU
+   * 服务人员的提成率
    */
-  $: csmSQC = () => {
-    return contractServiceValue * getCommissionRate("employee", "csm");
+  $: serviceCommissionRate = () => {
+    if (salesType == "employee")
+      return getCommissionRate("employee", "service", employeeSalesType);
+    return 0;
   };
 
   /**
-   * 付费的服务的SQC
+   * 交付、服务人员SQC ,即SE/CSM/KU
    */
-  $: payServiceSQC = () => {
-    return sqrOfService * getCommissionRate("employee", "service");
+  $: serviceSQC = () => {
+    return sqrOfProduct * serviceCommissionRate();
   };
 
   /**
-   * TODO: 渠道经理SQC、分成
+   * 付费的交付服务的SQC
    */
-  $: partnerSalesSQC = 0;
+  $: payDeliveryServiceSQC = () => {
+    return sqrOfService * getCommissionRate("employee", "payservice");
+  };
 
   /**
-   * TODO: 合作伙伴收入
+   * 渠道经理SQC、分成，扣掉合作伙伴分成后的数
    */
-  $: partnerIncome = 0;
+  $: partnerSalesSQC = () => {
+    if (salesType != "employee") {
+      return (sqrOfProduct - salesSQC()) * partnerSalesCommissionRate();
+    }
+
+    return 0;
+  };
+
+  /**
+   * 由于渠道经理的SQC，是扣掉合作伙伴分成后的数，所以这里计算一个比例，显示真实的SQR的总提成率
+   */
+  $: partnerSalesSQC_SQR_Ratio = () => {
+    return partnerSalesSQC() / sqrOfProduct;
+  };
+
+  /**
+   * 渠道经理提成率
+   */
+  $: partnerSalesCommissionRate = () => {
+    return getCommissionRate("employee", "partnersales");
+  };
+
+  /**
+   * 合作伙伴收入
+   */
+  $: partnerIncome = () => {
+    if (salesType != "employee") {
+      return salesSQC() - compensation;
+    }
+    return 0;
+  };
 
   /**
    * 合作伙伴、兼职雇员级别选择
@@ -303,7 +316,7 @@
   $: partnerLevel = "b"; //
 
   /**
-   * TODO: 补偿compensation
+   * 补偿compensation
    * 渠道或兼职人员，回馈补偿、填充对价
    */
   $: compensation = 0;
@@ -311,9 +324,25 @@
   /**
    * 公司这次回款的真实净利
    */
-  $: netIncomeByPayment =
-    payment - salesCost - bonusPool() - salesSQC() - sourcerSQC();
+  $: netIncomeByPayment = payment - salesCost - shareInPayment;
+
+  /**
+   * 公司这次回款的真实净利率
+   */
   $: netIncomeRatioByPayment = netIncomeByPayment / payment;
+
+  /**
+   * 本次回款的公司分利， 即分了多少出去
+   */
+  $: shareInPayment =
+    bonusPool() +
+    salesSQC() +
+    sourcerSQC() +
+    serviceSQC() +
+    payDeliveryServiceSQC() +
+    partnerSalesSQC() -
+    compensation;
+  $: shareInPaymentRatio = 1 - netIncomeRatioByPayment;
 </script>
 
 <main>
@@ -334,7 +363,7 @@
         </td>
       </tr>
 
-      <!-- <tr>
+      <tr>
         <td>
           <label for="contractType">
             Contract Type
@@ -343,7 +372,7 @@
           </label>
         </td>
         <td>
-          <select name="contractType" bind:value={contractType}>
+          <select name="contractType" bind:value={contractType} disabled>
             {#each contractTypes as ct}
               <option value={ct.id}>
                 {ct.text}
@@ -351,7 +380,7 @@
             {/each}
           </select>
         </td>
-      </tr> -->
+      </tr>
 
       {#if contractType == "hybrid"}
         <tr>
@@ -495,12 +524,12 @@
         </tr>
       {/if}
 
-      <!-- <tr>
+      <tr>
         <td>
           <label for="whoSourcingType">
             Sourcer
             <br />
-            线索谁开发的?
+            线索的来源?
           </label>
         </td>
         <td>
@@ -512,7 +541,7 @@
             {/each}
           </select>
         </td>
-      </tr> -->
+      </tr>
 
       <tr>
         <td>
@@ -598,36 +627,45 @@
         </tr>
       {/if}
 
+      {#if sourcerType == "employee" && employeeSalesType != "csm"}
+        <tr>
+          <td>
+            <span>
+              Sourcer Commission Rate
+              <br />
+              Sourcer提成率
+            </span>
+          </td>
+          <td>
+            {(sourcerCommissionRate() * 100).toFixed(2)}%
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <span>
+              Sourcer SQC (Sales Qualified Commission)
+              <br />
+              Sourcer计提多少阿米巴收入?
+            </span>
+          </td>
+          <td>
+            {sourcerSQC().toFixed(2)}
+          </td>
+        </tr>
+      {/if}
+
       <tr>
         <td>
           <span>
-            Sourcer Commission Rate
-            <br />
-            Sourcer提成率
-          </span>
-        </td>
-        <td>
-          {getCommissionRate(sourcerType, "sourcer") * 100}%
-        </td>
-      </tr>
-      <tr>
-        <td>
-          <span>
-            Sourcer SQC (Sales Qualified Commission)
-            <br />
-            Sourcer计提多少阿米巴收入?
-          </span>
-        </td>
-        <td>
-          {sourcerSQC()}
-        </td>
-      </tr>
-      <tr>
-        <td>
-          <span>
-            Sales Commission Rate
-            <br />
-            Sales提成率
+            {#if salesType == "employee"}
+              Sales Commission Rate
+              <br />
+              Sales提成率
+            {:else}
+              Partner/Contractor Commission Rate
+              <br />
+              伙伴销售提成率
+            {/if}
           </span>
         </td>
         <td>
@@ -637,70 +675,48 @@
       <tr>
         <td>
           <span>
-            Sales SQC (Sales Qualified Commission)
-            <br />
-            Sales计提多少阿米巴收入?
-
-            <!-- Partner/Contractor Commission
-            <br />
-            伙伴计提多少提成? -->
+            {#if salesType == "employee"}
+              Sales SQC (Sales Qualified Commission)
+              <br />
+              Sales计提多少阿米巴收入?
+            {:else}
+              Partner/Contractor SQC
+              <br />
+              伙伴销售计提多少提成?
+            {/if}
           </span>
         </td>
         <td>
-          {salesSQC()}
+          {salesSQC().toFixed(2)}
         </td>
       </tr>
 
-      <tr>
-        <td>
-          <span>
-
-            Partner Sales SQC (Sales Qualified Commission)
-            <br />
-            渠道销售计提多少阿米巴收入?
-            
-          </span>
-        </td>
-        <td>
-          
-        </td>
-      </tr>
-
-      <tr>
-        <td>
-          <span>
-            Partner Sales Commission Rate
-            <br />
-            渠道销售提成率
-          </span>
-        </td>
-        <td>
-          
-        </td>
-      </tr>
-      <tr>
-        <td>
-          <span>
-            CSM/SE/CS SQC (Sales Qualified Commission)
-            <br />
-            KU服务方计提多少阿米巴收入?
-          </span>
-        </td>
-        <td>
-        </td>
-      </tr>
-
-      <tr>
-        <td>
-          <span>
-            CSM/SE/CS Commission Rate
-            <br />
-            KU服务方提成率
-          </span>
-        </td>
-        <td>
-        </td>
-      </tr>
+      {#if sourcerType == "employee" && employeeSalesType != "csm"}
+        <tr>
+          <td>
+            <span>
+              CSM/SE/CS Commission Rate
+              <br />
+              KU服务方提成率
+            </span>
+          </td>
+          <td>
+            {(serviceCommissionRate() * 100).toFixed(2)}%
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <span>
+              CSM/SE/CS SQC (Sales Qualified Commission)
+              <br />
+              KU服务方计提多少阿米巴收入?
+            </span>
+          </td>
+          <td>
+            {serviceSQC()}
+          </td>
+        </tr>
+      {/if}
 
       {#if contractType == "hybrid" || contractType == "service"}
         <tr>
@@ -712,7 +728,7 @@
             </span>
           </td>
           <td>
-            {payServiceSQC()}
+            {payDeliveryServiceSQC()}
           </td>
         </tr>
       {/if}
@@ -721,12 +737,54 @@
         <td>
           Compensation
           <br />
-          合作补偿调节，如部分SQC中扣除某些事项
+          补偿机制，在Sales SQC或
+          <br />
+          Partner/Contractor SQC中扣除某些费用
         </td>
         <td>
           <input name="compensation" type="number" bind:value={compensation} />
         </td>
       </tr>
+
+      {#if salesType == "partner" || salesType == "contractor"}
+        <tr>
+          <td>
+            <span>
+              Partner Sales SQC (Sales Qualified Commission)
+              <br />
+              渠道销售计提多少阿米巴收入?
+            </span>
+          </td>
+          <td>
+            {partnerSalesSQC()}
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <span>
+              Partner Sales Commission Rate
+              <br />
+              渠道销售提成率
+            </span>
+          </td>
+          <td>
+            {(partnerSalesCommissionRate() * 100).toFixed(2)}% (all: {(
+              partnerSalesSQC_SQR_Ratio() * 100
+            ).toFixed(2)}%)
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Partner Income
+            <br />
+            合作伙伴最终收入
+          </td>
+          <td>
+            {partnerIncome()}
+          </td>
+        </tr>
+      {/if}
 
       <tr>
         <td>
@@ -748,10 +806,7 @@
           本次回款的公司分利
         </td>
         <td>
-          {payment - netIncomeByPayment} ({(
-            (1 - netIncomeRatioByPayment) *
-            100
-          ).toFixed(2)}%)
+          {shareInPayment} ({(shareInPaymentRatio * 100).toFixed(2)}%)
         </td>
       </tr>
 
@@ -769,14 +824,25 @@
   </form>
 
   <h1>Commission Rate Table</h1>
-  <table>
+  <table border="1" cellspacing="1" cellpadding="1">
     {#each Object.entries(commissionRate) as [key, value]}
-      <tr>
-        <td>{key}</td>
-        <td>{value * 100}%</td>
-      </tr>
+      {#if value.text}
+        <tr>
+          <td>{key}</td>
+          <td>{value.text}</td>
+          <td>{(value.rate * 100).toFixed(2)}%</td>
+        </tr>
+      {/if}
     {/each}
   </table>
+
+  <div>
+    <h2>DEBUG</h2>
+    * Share in Payment({shareInPayment}) = Bonus Pool({bonusPool()}) + Sales
+    SQC({salesSQC()}) + Sourcer SQC({sourcerSQC()}) + Service SQC({serviceSQC()})
+    + Pay Delivery Service SQC({payDeliveryServiceSQC()}) + Partner Sales SQC({partnerSalesSQC()})
+    - Compensation({compensation})
+  </div>
 </main>
 
 <!-- 

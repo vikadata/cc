@@ -342,6 +342,10 @@
     payDeliveryServiceSQC() +
     partnerSalesSQC() -
     compensation;
+
+  /**
+   * 分利占回款比例
+   */
   $: shareInPaymentRatio = 1 - netIncomeRatioByPayment;
 </script>
 

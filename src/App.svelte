@@ -810,7 +810,7 @@
           本次回款的公司分利
         </td>
         <td>
-          {shareInPayment} ({(shareInPaymentRatio * 100).toFixed(2)}%)
+          {shareInPayment.toFixed(2)} ({(shareInPaymentRatio * 100).toFixed(2)}%)
         </td>
       </tr>
 
@@ -821,7 +821,7 @@
           本次回款的公司真实净利
         </td>
         <td>
-          {netIncomeByPayment} ({(netIncomeRatioByPayment * 100).toFixed(2)}%)
+          {netIncomeByPayment.toFixed(2)} ({(netIncomeRatioByPayment * 100).toFixed(2)}%)
         </td>
       </tr>
     </table>

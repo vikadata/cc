@@ -351,7 +351,6 @@
 
 <main>
   <h1>Commission Calculator</h1>
-  <!-- <p>Visit the <a href="https://svelte.dev/tutorial">Svelte tutorial</a> to learn how to build Svelte apps.</p> -->
   <form>
     <table border="1" cellspacing="1">
       <tr>
@@ -464,6 +463,19 @@
 
       <tr>
         <td>
+          <label for="paymentRatio">
+            Payment Ratio
+            <br />
+            回款比例
+          </label>
+        </td>
+        <td>
+          {paymentRatio * 100}%
+        </td>
+      </tr>
+
+      <tr>
+        <td>
           <label for="salesCost">
             Sales Cost
             <br />
@@ -489,18 +501,6 @@
         </td>
       </tr>
 
-      <tr>
-        <td>
-          <label for="paymentRatio">
-            Payment Ratio
-            <br />
-            回款比例
-          </label>
-        </td>
-        <td>
-          {paymentRatio * 100}%
-        </td>
-      </tr>
 
       {#if contractType == "hybrid" || contractType == "product"}
         <tr>

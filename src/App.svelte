@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { getARR, getMRR, getSQR, PersonnelType } from "./autopilot";
+  import { getARR, getMRR, getSQR, Payment, PersonnelRole, PersonnelType } from "./autopilot";
   import * as lib from "./autopilot";
   import commissionRate from "./commission_rate";
-
 
   /**
    * total contract value
@@ -24,7 +23,7 @@
    * the sourcing people personnel type
    * Sourcer职员类型
    */
-  $: sourcerType = "employee";
+  $: sourcerType = PersonnelType.Employee;
 
   /**
    * 第三方销售成本
@@ -37,21 +36,21 @@
    * sales personnel type
    * 销售Sales的职员类型
    */
-  $: salesType = "partner";
+  $: salesType =  PersonnelType.Partner;
 
   /**
    * Sales Employee Job Type
    * 雇员型销售的类型，大客户、直销、客户成功
    */
-  export let employeeSalesType = "sme";
+  export let employeeSalesType = PersonnelRole.SME;
 
   /**
    * 销售雇员岗位类型
    */
   export let employeeSalesTypes = [
-    { id: "sme", text: "直销 SME" },
-    { id: "ent", text: "大客户 ENT" },
-    { id: "csm", text: "客户成功 CSM" },
+    { id: PersonnelRole.SME, text: "直销 SME" },
+    { id: PersonnelRole.ENT, text: "大客户 ENT" },
+    { id: PersonnelRole.CSM, text: "客户成功 CSM" },
   ];
 
   /**
@@ -185,14 +184,16 @@
    * Sourcer的SQC，计提阿米巴
    */
   $: sourcerSQC = () => {
-    // 我们开发的线索，给到Partners，我们的怎么分？
+    const res = getSQCResult();
+    return res.sourcerSQC;
 
-    if (salesType == "employee") {
-      return sqrOfProduct * sourcerCommissionRate();
-    } else {
-      // 如果是渠道合作伙伴，减掉他们的分成后，剩下的才是我们的
-      return (sqrOfProduct - salesSQC()) * sourcerCommissionRate();
-    }
+    // // 我们开发的线索，给到Partners，我们的怎么分？
+    // if (salesType == "employee") {
+    //   return sqrOfProduct * sourcerCommissionRate();
+    // } else {
+    //   // 如果是渠道合作伙伴，减掉他们的分成后，剩下的才是我们的
+    //   return (sqrOfProduct - salesSQC()) * sourcerCommissionRate();
+    // }
   };
 
   /**
@@ -206,20 +207,61 @@
    * Sales的SQC，计提阿米巴
    */
   $: salesSQC = () => {
-    if (salesType == "partner") {
-      return paymentMargin * realSalesCommissionRate(); // partner按回款、contractor按SQR
-    } else if (salesType == "employee") {
-      return sqrOfProduct * realSalesCommissionRate();
-    } else {
-      return sqrOfProduct * realSalesCommissionRate();
-    }
+    const res = getSQCResult();
+    return res.salesSQC;
+
+    // if (salesType == "partner") {
+    //   return paymentMargin * realSalesCommissionRate(); // partner按回款、contractor按SQR
+    // } else if (salesType == "employee") {
+    //   return sqrOfProduct * realSalesCommissionRate();
+    // } else {
+    //   return sqrOfProduct * realSalesCommissionRate();
+    // }
   };
+
+  /**
+   * 构造一个模拟的Payment对象，用于计算SQC
+   */
+  $: getSQCResult = () => {
+    const simPayment: Payment = {
+      contract: {
+        tcv: tcv,
+        period: contractPeriod,
+        customer: {
+        },
+        lead: {
+          sourcer: {
+            name: 'sim-sourcer',
+            type: sourcerType,
+            role: employeeSalesType,
+          },
+          sales: {
+            name: 'sim-sales',
+            type: salesType,
+            role: salesType == 'employee' ? employeeSalesType : partnerLevel,
+          },
+          servant: {
+            name: 'sim-servant',
+            type: PersonnelType.Employee,
+            role: employeeSalesType,
+          }
+        }
+      },
+      amount: payment,
+      salesCost: salesCost,
+    }
+
+    const res = lib.getSQCResult(simPayment, compensation);
+    return res;
+  }
 
   /**
    * 计入公司奖金池金额
    */
   $: bonusPool = () => {
-    return sqrOfProduct * getCommissionRate("employee", "bonus");
+    const res = getSQCResult();
+    return res.bonusPool;
+    // return sqrOfProduct * getCommissionRate("employee", "bonus");
   };
 
   /**
@@ -235,13 +277,16 @@
    * 交付、服务人员SQC ,即SE/CSM/KU
    */
   $: serviceSQC = () => {
-    return sqrOfProduct * serviceCommissionRate();
+    const res = getSQCResult();
+    return res.serviceSQC;
   };
 
   /**
    * 付费的交付服务的SQC
    */
   $: payDeliveryServiceSQC = () => {
+    // const res = getSQCResult();
+    // return res.payDeliveryServiceSQC;
     return sqrOfService * getCommissionRate("employee", "payservice");
   };
 
@@ -249,11 +294,13 @@
    * 渠道经理SQC、分成，扣掉合作伙伴分成后的数
    */
   $: partnerSalesSQC = () => {
-    if (salesType != "employee") {
-      return (sqrOfProduct - salesSQC()) * partnerSalesCommissionRate();
-    }
+    const res = getSQCResult();
+    return res.partnerSalesSQC;
+    // if (salesType != "employee") {
+    //   return (sqrOfProduct - salesSQC()) * partnerSalesCommissionRate();
+    // }
 
-    return 0;
+    // return 0;
   };
 
   /**
@@ -274,25 +321,28 @@
    * 合作伙伴收入
    */
   $: partnerIncome = () => {
-    if (salesType != "employee") {
-      return salesSQC() - compensation;
-    }
-    return 0;
+    const res = getSQCResult();
+
+    return res.partnerIncome;
+    // if (salesType != "employee") {
+    //   return salesSQC() - compensation;
+    // }
+    // return 0;
   };
 
   /**
    * 合作伙伴、合约雇员级别选择
    */
   $: partnersLevel = [
-    { id: "b", text: `铜牌级(B)` },
-    { id: "a", text: `银牌级(A)` },
-    { id: "s", text: `金牌级(S)` },
+    { id: PersonnelRole.B, text: `铜牌级(B)` },
+    { id: PersonnelRole.A, text: `银牌级(A)` },
+    { id: PersonnelRole.S, text: `金牌级(S)` },
   ];
 
   /**
    * 合作伙伴、合约雇员级别
    */
-  $: partnerLevel = "b"; //
+  $: partnerLevel = PersonnelRole.B; //
 
   /**
    * 补偿compensation

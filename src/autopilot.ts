@@ -14,7 +14,7 @@ export enum PersonnelType {
   }
 
   export enum PersonnelRole {
-    Enterprise = 'ent',
+    ENT = 'ent',
     SME = 'sme',
     CSM = 'csm',
     S = 's',
@@ -23,6 +23,7 @@ export enum PersonnelType {
 
   }
 export interface Personnel {
+  name?: string;
     type: PersonnelType;
     role: PersonnelRole;
 }
@@ -32,6 +33,7 @@ export interface Personnel {
 export interface Lead {
     sourcer: Personnel;
     sales: Personnel;
+    servant: Personnel;
     partnerSales?: Personnel;
 }
 
@@ -89,15 +91,106 @@ export interface AmoebaBill {
  * SQC计算结果 （针对Payment）
  */
 export class SQCResult {
-    personnel: string;
-    sqc: number
-    reason: string;
-    // sourcerSQC: number;
-    // salesSQC: number;
-    // serviceSQC: number;
-    // partnerSalesSQC: number;
+
+    sourcerSQC: number;
+    salesSQC: number;
+    serviceSQC: number;
+    partnerSalesSQC: number;
+    bonusPool: number;
+    compensation: number;
+
+    /**
+     * 销售人类型
+     */
+    salesType: PersonnelType;
+  
+    constructor(source: Partial<SQCResult>) {
+        Object.assign(this, source);
+    }
+
+    get partnerIncome() {
+      if (this.salesType != PersonnelType.Employee) {
+        return this.salesSQC - this.compensation;
+      }
+
+      return 0;
+    }
 }
 
+export const sourcerCommissionRate = (sourcerType, employeeSalesType) => {
+  // sourcer必须是雇员
+  return getCommissionRate(sourcerType, "sourcer", employeeSalesType);
+};
+
+/**
+ * 服务人员的提成率
+ */
+export const serviceCommissionRate = (salesType, employeeSalesType) => {
+  if (salesType == "employee")
+    return getCommissionRate("employee", "service", employeeSalesType);
+  return 0;
+};
+
+/**
+ * 计算所有SQC如何分
+ */
+export function getSQCResult(payment: Payment, compensation: number = 0): SQCResult{
+
+  const contract = payment.contract;
+  const sqrOfProduct = getSQR(payment.amount, contract.period);
+  const sourcerType = contract.lead.sourcer.type;
+  const sourcerRole = contract.lead.sourcer.role;
+  const salesType = contract.lead.sales.type;
+  const szSalesType = salesType.toString().toLowerCase();
+
+  const paymentMargin = payment.amount - payment.salesCost;
+  const employeeSalesType = contract.lead.sales.role; // if employee sales
+  const partnerLevel = contract.lead.sales.role; // if partner
+
+  let salesSQC = 0;
+  if (salesType == PersonnelType.Partner) {
+      salesSQC = paymentMargin * getSalesCommissionRate(szSalesType, employeeSalesType, partnerLevel); // partner按回款、contractor按SQR
+    } else if (salesType == PersonnelType.Employee) {
+      salesSQC = sqrOfProduct * getSalesCommissionRate(szSalesType, employeeSalesType, partnerLevel);
+    } else {
+      salesSQC = sqrOfProduct * getSalesCommissionRate(szSalesType, employeeSalesType, partnerLevel);
+    }
+
+  // start calc the SQC
+  let sourcerSQC = 0;
+  // 我们开发的线索，给到Partners，我们的怎么分？
+  if (szSalesType == "employee") {
+    sourcerSQC = sqrOfProduct * sourcerCommissionRate(sourcerType, sourcerRole);
+  } else {
+    // 如果是渠道合作伙伴，减掉他们的分成后，剩下的才是我们的
+    sourcerSQC = (sqrOfProduct - salesSQC) * sourcerCommissionRate(sourcerType, sourcerRole);
+  }
+
+  const serviceSQC = sqrOfProduct * serviceCommissionRate(szSalesType, employeeSalesType);
+
+  const payServiceSQC = 0;
+
+  let partnerSalesSQC = 0
+  if (szSalesType != "employee") {
+    partnerSalesSQC = (sqrOfProduct - salesSQC) * getCommissionRate("employee", "partnersales");
+  }
+
+  const bonusPool = sqrOfProduct * getCommissionRate("employee", "bonus");
+
+  const res = new SQCResult({
+      sourcerSQC: sourcerSQC,
+      salesSQC: salesSQC,
+      serviceSQC: serviceSQC,
+      // payServiceSQC: payServiceSQC,
+      partnerSalesSQC: partnerSalesSQC,
+      bonusPool: bonusPool,
+      compensation: compensation,
+
+      salesType: salesType,
+  })
+  return res;
+
+}
 /**
  * 阿米巴账单类型
  */
@@ -123,7 +216,6 @@ export function getSQR(productPayment: number, periodMonthly: number) {
   return productPayment / contractPeriodYearly +
     ((productPayment * (contractPeriodYearly - 1)) / contractPeriodYearly) *
       0.5;
-
 }
 
 /**

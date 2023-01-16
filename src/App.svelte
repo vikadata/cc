@@ -1,7 +1,8 @@
 <script lang="ts">
-  import * as lib from "./lib";
-
+  import { getARR, getMRR, getSQR, PersonnelType } from "./autopilot";
+  import * as lib from "./autopilot";
   import commissionRate from "./commission_rate";
+
 
   /**
    * total contract value
@@ -14,9 +15,9 @@
    * 职员类型
    */
   $: personnelTypes = [
-    { id: "employee", text: `全职雇员 Employee` },
-    { id: "contractor", text: `合约雇员 Contractor` },
-    { id: "partner", text: `渠道合作伙伴 Partner` },
+    { id: PersonnelType.Employee, text: `全职雇员 Employee` },
+    { id: PersonnelType.Contractor, text: `合约雇员 Contractor` },
+    { id: PersonnelType.Partner, text: `渠道合作伙伴 Partner` },
   ];
 
   /**
@@ -141,28 +142,24 @@
    */
   $: paymentRatio = payment / tcv;
 
-  /**
-   * 合同周期年化
-   */
-  $: contractPeriodYearly = contractPeriod / 12; // 12个月为年化
 
   /**
    * ARR
    */
-  $: arr = lib.getARR(contractProductValue(), contractPeriod);
+  $: arr = getARR(contractProductValue(), contractPeriod);
 
   /**
    * MRR
    */
-  $: mrr = lib.getMRR(contractProductValue(), contractPeriod);
+  $: mrr = getMRR(contractProductValue(), contractPeriod);
 
   /**
    * 产品SQR 销售确认收入
    */
-  $: sqrOfProduct =
-    paymentOfProduct() / contractPeriodYearly +
-    ((paymentOfProduct() * (contractPeriodYearly - 1)) / contractPeriodYearly) *
-      0.5;
+  $: sqrOfProduct = getSQR(paymentOfProduct(), contractPeriod);
+    // paymentOfProduct() / contractPeriodYearly +
+    // ((paymentOfProduct() * (contractPeriodYearly - 1)) / contractPeriodYearly) *
+    //   0.5;
 
   /**
    * 服务SQR 销售确认收入
@@ -172,22 +169,8 @@
   /**
    * 根据职员、岗位、额外属性，提取提成率对象
    */
-  $: getCommissionRateObj = (personnelType, role, extra = undefined) => {
-    const key =
-      extra === undefined
-        ? `${personnelType}-${role}`
-        : `${personnelType}-${role}-${extra}`;
-    const obj = commissionRate[key];
-    return obj;
-  };
-
-  /**
-   * 根据职员、岗位、额外属性，提取提成率对象
-   */
   $: getCommissionRate = (personnelType, role, extra = undefined) => {
-    const obj = getCommissionRateObj(personnelType, role, extra);
-    if (obj) return obj.rate;
-    return 0;
+    return lib.getCommissionRate(personnelType, role, extra);
   };
 
   /**
@@ -216,11 +199,7 @@
    * 销售提成率，根据不同的销售职员类型、岗位类型，提成率不同
    */
   $: realSalesCommissionRate = () => {
-    if (salesType == "employee") {
-      return getCommissionRate("employee", "sales", employeeSalesType);
-    } else {
-      return getCommissionRate(salesType, "sales", partnerLevel); // contractor、partner分级别
-    }
+    return lib.getSalesCommissionRate(salesType, employeeSalesType, partnerLevel);
   };
 
   /**

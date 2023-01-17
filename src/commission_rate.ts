@@ -8,46 +8,45 @@ const commissionRate: {[key: string]: {text: string, rate: number}} = {
 
   // sourcing
   // "employee-sourcer": 0.07,
-  "employee-sourcer-sme": {
-    text: '全职雇员-线索开发-直销团队',
+  "employee-sourcer-new": {
+    text: '全职雇员-线索开发-新购合同',
     rate: 0.07
   },
-  "employee-sourcer-ent": {
-    text: '全职雇员-线索开发-大客户团队',
-    rate: 0.07
-  },
-  "employee-sourcer-csm": {
-    text: '全职雇员-线索开发-客户成功续费',
-    rate: 0
+  // "employee-sourcer-new": {
+  //   text: '全职雇员-线索开发-大客户团队',
+  //   rate: 0.07
+  // },
+  "employee-sourcer-renewal": {
+    text: '全职雇员-线索开发-续费',
+    rate: 0.03
   },
   // kp
   // "employee-sales": 0.16,
-  "employee-sales-sme": {
-    text: '全职雇员-销售-直销团队',
+  "employee-sales-new": {
+    text: '全职雇员-销售-新购',
     rate: 0.16,
   },
-  "employee-sales-ent": {
-    text: '全职雇员-销售-大客户团队',
-    rate: 0.16,
-  },
-  "employee-sales-csm": {
-    text: '全职雇员-销售-客户成功续费',
-    rate: 0.16
+  // "employee-sales-ent": {
+  //   text: '全职雇员-销售-大客户团队',
+  //   rate: 0.16,
+  // },
+  "employee-sales-renewal": {
+    text: '全职雇员-销售-续费',
+    rate: 0.12,
   },
 
   // ku users service
   // "employee-service": 0.07,
-  "employee-service-sme": {
-    text: '全职雇员-用户服务-直销团队',
+  "employee-service-new": {
+    text: '全职雇员-用户服务-新购合同',
     rate: 0.07
   },
-  "employee-service-ent": {
-    text: '全职雇员-用户服务-大客户团队',
-    rate: 0.07
-  },
-  "employee-service-csm": {
-    // text: '全职雇员-用户服务-CSM',
-    text: undefined,
+  // "employee-service-renewal": {
+  //   text: '全职雇员-用户服务-续费合同',
+  //   rate: 0.07
+  // },
+  "employee-service-renewal": {
+    text: '全职雇员-用户服务-续费合同',
     rate: 0
   },
 

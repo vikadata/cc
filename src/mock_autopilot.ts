@@ -1,33 +1,41 @@
-import { PersonnelType, PersonnelRole, Lead, Customer, Contract, Personnel, Payment, SQCResult, AmoebaBill, getSalesCommissionRate } from './autopilot';
+import { PersonnelType, PersonnelRole, Lead, Customer, Contract, Personnel, Payment, SQCResult, AmoebaBill, getSalesCommissionRate, ContractType } from './autopilot';
 import * as lib from './autopilot';
 
 
+/**
+ * 职员
+ */
 const personnel: { [id: string]: Personnel} = {
     'amen': {
         name: 'amen',
         type: PersonnelType.Employee,
-        role: PersonnelRole.SME,
+        // role: PersonnelRole.B,
 
     },
     'bmen': {
         name: 'amen',
         type: PersonnelType.Employee,
-        role: PersonnelRole.ENT,
+        // role: PersonnelRole.ENT,
     },
     'cmen': {
         name: 'cmen',
         type: PersonnelType.Employee,
-        role: PersonnelRole.CSM,
+        // role: PersonnelRole.CSM,
     },
 
     'dmen': {
         name: 'dmen',
         type: PersonnelType.Employee,
-        role: PersonnelRole.SME,
+        // role: PersonnelRole.SME,
     },
     'emen': {
         name: 'emen',
         type: PersonnelType.Contractor,
+        role: PersonnelRole.B,
+    },
+    'fmen': {
+        name: 'fmen',
+        type: PersonnelType.Partner,
         role: PersonnelRole.B,
     },
 }
@@ -63,12 +71,14 @@ const contracts: {[key: string]: Contract} = {
         lead: leads['A1'],
         tcv: 10000,
         period: 12,
+        type: ContractType.New,
     },
     "b": {
         customer: customers['B'],
         lead: leads['B1'],
         tcv: 10000,
         period: 12,
+        type: ContractType.New,
     }
 }
 

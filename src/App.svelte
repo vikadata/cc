@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getARR, getMRR, getSQR, Payment, PersonnelRole, PersonnelType } from "./autopilot";
+  import { ContractType, getARR, getMRR, getSQR, Payment, PersonnelRole, PersonnelType } from "./autopilot";
   import * as lib from "./autopilot";
   import commissionRate from "./commission_rate";
 
@@ -18,6 +18,17 @@
     { id: PersonnelType.Contractor, text: `合约雇员 Contractor` },
     { id: PersonnelType.Partner, text: `渠道合作伙伴 Partner` },
   ];
+
+  /**
+   * 合同类型
+  */
+  $: contractTypes = [
+    { id: ContractType.New, text: `New 新购合同` },
+    { id: ContractType.Renewal, text: `Renewal 续费合同` },
+
+  ]
+
+  $: contractType = ContractType.New;
 
   /**
    * the sourcing people personnel type
@@ -42,16 +53,16 @@
    * Sales Employee Job Type
    * 雇员型销售的类型，大客户、直销、客户成功
    */
-  export let employeeSalesType = PersonnelRole.SME;
+  // export let employeeSalesType = PersonnelRole.SME;
 
   /**
    * 销售雇员岗位类型
    */
-  export let employeeSalesTypes = [
-    { id: PersonnelRole.SME, text: "直销 SME" },
-    { id: PersonnelRole.ENT, text: "大客户 ENT" },
-    { id: PersonnelRole.CSM, text: "客户成功 CSM" },
-  ];
+  // export let employeeSalesTypes = [
+  //   { id: PersonnelRole.SME, text: "直销 SME" },
+  //   { id: PersonnelRole.ENT, text: "大客户 ENT" },
+  //   { id: PersonnelRole.CSM, text: "客户成功 CSM" },
+  // ];
 
   /**
    * Contract Period
@@ -60,35 +71,35 @@
   $: contractPeriod = 12;
 
   /**
-   * 可选合同类型
+   * 可选合同种类
    */
-  export let contractTypes = [
+  export let contractModels = [
     { id: "product", text: `纯产品 Product-only` },
     { id: "service", text: `纯服务 Service-only` },
     { id: "hybrid", text: `产品加服务 Hybrid` },
   ];
 
   /**
-   * Contract Type
-   * 合同类型
+   * Contract Model
+   * 合同种类
    */
-  export let contractType = "product";
+  export let contractModel = "product";
 
   /**
    * Contract Service Value
    * 合同中的服务部分价值（排除产品价值）
    */
-  $: contractServiceValue = contractType == "service" ? tcv : 0;
+  $: contractServiceValue = contractModel == "service" ? tcv : 0;
 
   /**
    * 合同中的产品部分价值
    */
   $: contractProductValue = () => {
-    if (contractType == "product") {
+    if (contractModel == "product") {
       return tcv;
-    } else if (contractType == "service") {
+    } else if (contractModel == "service") {
       return 0;
-    } else if (contractType == "hybrid") {
+    } else if (contractModel == "hybrid") {
       return tcv - contractServiceValue;
     } else {
       return 0;
@@ -177,7 +188,7 @@
    */
   $: sourcerCommissionRate = () => {
     // sourcer必须是雇员
-    return getCommissionRate(sourcerType, "sourcer", employeeSalesType);
+    return getCommissionRate(sourcerType, "sourcer", contractType);
   };
 
   /**
@@ -200,7 +211,7 @@
    * 销售提成率，根据不同的销售职员类型、岗位类型，提成率不同
    */
   $: realSalesCommissionRate = () => {
-    return lib.getSalesCommissionRate(salesType, employeeSalesType, partnerLevel);
+    return lib.getSalesCommissionRate(salesType, contractType, partnerLevel);
   };
 
   /**
@@ -227,23 +238,24 @@
       contract: {
         tcv: tcv,
         period: contractPeriod,
+        type: contractType,
         customer: {
         },
         lead: {
           sourcer: {
             name: 'sim-sourcer',
             type: sourcerType,
-            role: employeeSalesType,
+            role: partnerLevel,
           },
           sales: {
             name: 'sim-sales',
             type: salesType,
-            role: salesType == 'employee' ? employeeSalesType : partnerLevel,
+            role: partnerLevel,
           },
           servant: {
             name: 'sim-servant',
             type: PersonnelType.Employee,
-            role: employeeSalesType,
+            role: partnerLevel,
           }
         }
       },
@@ -269,7 +281,7 @@
    */
   $: serviceCommissionRate = () => {
     if (salesType == "employee")
-      return getCommissionRate("employee", "service", employeeSalesType);
+      return getCommissionRate("employee", "service", contractType);
     return 0;
   };
 
@@ -397,24 +409,24 @@
 
       <tr>
         <td>
-          <label for="contractType">
-            Contract Type
+          <label for="contractModel">
+            Contract Model 
             <br />
-            合同类型
+            合同种类
           </label>
         </td>
         <td>
-          <select name="contractType" bind:value={contractType} disabled>
-            {#each contractTypes as ct}
-              <option value={ct.id}>
-                {ct.text}
+          <select name="contractModel" bind:value={contractModel}>
+            {#each contractModels as cm}
+              <option value={cm.id}>
+                {cm.text}
               </option>
             {/each}
           </select>
         </td>
       </tr>
 
-      {#if contractType == "hybrid"}
+      {#if contractModel == "hybrid"}
         <tr>
           <td>
             <label for="contractServiceValue">
@@ -443,7 +455,7 @@
         </tr>
       {/if}
 
-      {#if contractType != "service"}
+      {#if contractModel != "service"}
         <tr>
           <td>
             <label for="period">
@@ -476,6 +488,25 @@
           </td>
         </tr>
       {/if}
+
+      <tr>
+        <td>
+          <label for="contractModel">
+            Contract Type
+            <br />
+            合同类型
+          </label>
+        </td>
+        <td>
+          <select name="contractType" bind:value={contractType}>
+            {#each contractTypes as ct}
+              <option value={ct.id}>
+                {ct.text}
+              </option>
+            {/each}
+          </select>
+        </td>
+      </tr>
 
       <tr>
         <td>
@@ -531,7 +562,7 @@
       </tr>
 
 
-      {#if contractType == "hybrid" || contractType == "product"}
+      {#if contractModel == "hybrid" || contractModel == "product"}
         <tr>
           <td>
             Payment of Product
@@ -544,7 +575,7 @@
         </tr>
       {/if}
 
-      {#if contractType == "hybrid" || contractType == "service"}
+      {#if contractModel == "hybrid" || contractModel == "service"}
         <tr>
           <td>
             Payment of Service
@@ -594,7 +625,8 @@
           </select>
         </td>
       </tr>
-      {#if salesType == "employee"}
+      <!-- {#if salesType == "employee"}
+        
         <tr>
           <td>
             <label for="employeeSalesType">
@@ -613,9 +645,9 @@
             </select>
           </td>
         </tr>
-      {/if}
+      {/if} -->
 
-      {#if salesType == "partner" || salesType == "contractor"}
+      {#if salesType == PersonnelType.Partner || salesType == PersonnelType.Contractor}
         <tr>
           <td>
             <label for="partnerLevel">
@@ -636,7 +668,7 @@
         </tr>
       {/if}
 
-      {#if contractType == "hybrid" || contractType == "product"}
+      {#if contractModel == "hybrid" || contractModel == "product"}
         <tr>
           <td>
             <label for="sqr">
@@ -651,7 +683,7 @@
         </tr>
       {/if}
 
-      {#if contractType == "hybrid" || contractType == "service"}
+      {#if contractModel == "hybrid" || contractModel == "service"}
         <tr>
           <td>服务SQR</td>
           <td>
@@ -660,7 +692,7 @@
         </tr>
       {/if}
 
-      {#if sourcerType == "employee" && employeeSalesType != "csm"}
+      {#if sourcerType == PersonnelType.Employee}
         <tr>
           <td>
             <span>
@@ -690,7 +722,7 @@
       <tr>
         <td>
           <span>
-            {#if salesType == "employee"}
+            {#if salesType == PersonnelType.Employee}
               Sales Commission Rate
               <br />
               Sales提成率
@@ -708,7 +740,7 @@
       <tr>
         <td>
           <span>
-            {#if salesType == "employee"}
+            {#if salesType == PersonnelType.Employee}
               Sales SQC (Sales Qualified Commission)
               <br />
               Sales计提多少阿米巴收入?
@@ -724,7 +756,7 @@
         </td>
       </tr>
 
-      {#if sourcerType == "employee" && employeeSalesType != "csm"}
+      {#if sourcerType == PersonnelType.Employee && contractType == ContractType.New}
         <tr>
           <td>
             <span>
@@ -751,7 +783,7 @@
         </tr>
       {/if}
 
-      {#if contractType == "hybrid" || contractType == "service"}
+      {#if contractModel == "hybrid" || contractModel == "service"}
         <tr>
           <td>
             <span>

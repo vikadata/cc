@@ -3,7 +3,6 @@
 
 import commissionRate from "./commission_rate";
 
-
 /**
  * 职员类型
  */
@@ -14,18 +13,19 @@ export enum PersonnelType {
   }
 
   export enum PersonnelRole {
-    ENT = 'ent',
-    SME = 'sme',
-    CSM = 'csm',
+    // ENT = 'ent',
+    // SME = 'sme',
+    // CSM = 'csm',
+
     S = 's',
     A = 'a',
     B = 'b',
 
   }
 export interface Personnel {
-  name?: string;
+    name?: string;
     type: PersonnelType;
-    role: PersonnelRole;
+    role?: PersonnelRole;
 }
 /**
  * 线索
@@ -40,6 +40,11 @@ export interface Lead {
 export interface Customer {
 
 }
+
+export enum ContractType {
+    New = "new",
+    Renewal = "renewal",
+}
 /**
  * 合同
  */
@@ -48,6 +53,8 @@ export interface Contract {
     lead: Lead;
     tcv: number;
     period: number;
+    type: ContractType;
+
 
 }
 /**
@@ -117,17 +124,19 @@ export class SQCResult {
     }
 }
 
-export const sourcerCommissionRate = (sourcerType, employeeSalesType) => {
+export const sourcerCommissionRate = (sourcerType, contractType) => {
   // sourcer必须是雇员
-  return getCommissionRate(sourcerType, "sourcer", employeeSalesType);
+  if (sourcerType == PersonnelType.Employee) 
+    return getCommissionRate(sourcerType, "sourcer", contractType);
+  return 0;
 };
 
 /**
  * 服务人员的提成率
  */
-export const serviceCommissionRate = (salesType, employeeSalesType) => {
-  if (salesType == "employee")
-    return getCommissionRate("employee", "service", employeeSalesType);
+export const serviceCommissionRate = (salesType, contractType) => {
+  if (salesType == PersonnelType.Employee)
+    return getCommissionRate(PersonnelType.Employee, "service", contractType);
   return 0;
 };
 
@@ -137,41 +146,39 @@ export const serviceCommissionRate = (salesType, employeeSalesType) => {
 export function getSQCResult(payment: Payment, compensation: number = 0): SQCResult{
 
   const contract = payment.contract;
+  const contractType = contract.type;
   const sqrOfProduct = getSQR(payment.amount, contract.period);
   const sourcerType = contract.lead.sourcer.type;
-  const sourcerRole = contract.lead.sourcer.role;
   const salesType = contract.lead.sales.type;
-  const szSalesType = salesType.toString().toLowerCase();
 
   const paymentMargin = payment.amount - payment.salesCost;
-  const employeeSalesType = contract.lead.sales.role; // if employee sales
   const partnerLevel = contract.lead.sales.role; // if partner
 
   let salesSQC = 0;
   if (salesType == PersonnelType.Partner) {
-      salesSQC = paymentMargin * getSalesCommissionRate(szSalesType, employeeSalesType, partnerLevel); // partner按回款、contractor按SQR
+      salesSQC = paymentMargin * getSalesCommissionRate(salesType, contractType, partnerLevel); // partner按回款、contractor按SQR
     } else if (salesType == PersonnelType.Employee) {
-      salesSQC = sqrOfProduct * getSalesCommissionRate(szSalesType, employeeSalesType, partnerLevel);
+      salesSQC = sqrOfProduct * getSalesCommissionRate(salesType, contractType, partnerLevel);
     } else {
-      salesSQC = sqrOfProduct * getSalesCommissionRate(szSalesType, employeeSalesType, partnerLevel);
+      salesSQC = sqrOfProduct * getSalesCommissionRate(salesType, contractType, partnerLevel);
     }
 
   // start calc the SQC
   let sourcerSQC = 0;
   // 我们开发的线索，给到Partners，我们的怎么分？
-  if (szSalesType == "employee") {
-    sourcerSQC = sqrOfProduct * sourcerCommissionRate(sourcerType, sourcerRole);
+  if (salesType == PersonnelType.Employee) {
+    sourcerSQC = sqrOfProduct * sourcerCommissionRate(sourcerType, contractType);
   } else {
     // 如果是渠道合作伙伴，减掉他们的分成后，剩下的才是我们的
-    sourcerSQC = (sqrOfProduct - salesSQC) * sourcerCommissionRate(sourcerType, sourcerRole);
+    sourcerSQC = (sqrOfProduct - salesSQC) * sourcerCommissionRate(sourcerType, contractType);
   }
 
-  const serviceSQC = sqrOfProduct * serviceCommissionRate(szSalesType, employeeSalesType);
+  const serviceSQC = sqrOfProduct * serviceCommissionRate(salesType, contractType);
 
   const payServiceSQC = 0;
 
   let partnerSalesSQC = 0
-  if (szSalesType != "employee") {
+  if (salesType != PersonnelType.Employee) {
     partnerSalesSQC = (sqrOfProduct - salesSQC) * getCommissionRate("employee", "partnersales");
   }
 
@@ -221,9 +228,9 @@ export function getSQR(productPayment: number, periodMonthly: number) {
 /**
  * 销售提成率，根据不同的销售职员类型、岗位类型，提成率不同
  */
-export const getSalesCommissionRate = (salesType: string, employeeSalesType: string, partnerLevel: string) => {
+export const getSalesCommissionRate = (salesType: string, contractType: string, partnerLevel: string) => {
   if (salesType == 'employee') {
-      return getCommissionRate('employee', "sales", employeeSalesType);
+      return getCommissionRate('employee', "sales", contractType);
   } else {
       return getCommissionRate(salesType, "sales", partnerLevel); // contractor、partner分级别
   }

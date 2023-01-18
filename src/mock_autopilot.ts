@@ -103,13 +103,17 @@ export const amoebas = {
     'ent': {
         type: PersonnelType.Employee,
         members: [
-            // auto
+            'amen',
+            'bmen',
         ]
     },
     'sme': {
         type: PersonnelType.Employee,
         members: [
-            // auto
+            'cmen',
+            'dmen',
+            'emen',
+            'fmen',
         ]
 
     }
@@ -131,6 +135,12 @@ export const amoebaBills = [
 
 
 function main() {
+
+    const sqcResultsList: SQCResult[] = [];
+    const personnelsSQC: {[key: string]: number} = {
+
+    };
+
     // 通过回款算出SQC，虚出SQC收入，放到阿米巴
     for (const key in payments) {
         const payment = payments[key];
@@ -141,6 +151,11 @@ function main() {
         const lead = payment.contract.lead;
         const contract = payment.contract;
 
+        const sourcer = lead.sourcer;
+        const sales = lead.sales;
+        const servant = lead.servant;
+        const partnerSales = lead.partnerSales;
+
         console.log('================================================================');
         console.log(`Contract合同： tcv: ${contract.tcv}, period: ${contract.period}`)
         console.log(`Payment回款： ${payment.amount}`)
@@ -150,6 +165,19 @@ function main() {
             console.log(`Servant KU服务: ${lead.servant.type}, ${lead.servant.role}`);
         console.log(sqcResult);
 
+        sqcResultsList.push(sqcResult);
+
+        // 累计SQC
+        personnelsSQC[sourcer.name] = (personnelsSQC[sourcer.name] || 0) + sqcResult.sourcerSQC;
+        personnelsSQC[sales.name] = (personnelsSQC[sales.name] || 0) + sqcResult.salesSQC;
+
+        if (servant)
+            personnelsSQC[servant.name] = (personnelsSQC[servant.name] || 0) + sqcResult.serviceSQC;
+
+        if (partnerSales)
+            personnelsSQC[partnerSales.name] = (personnelsSQC[partnerSales.name] || 0) + sqcResult.partnerSalesSQC;
+        
+
         // for (const sqcResult of sqcResults) {
         //     const amoeba = null;
         //     const amoebaBill = {
@@ -158,11 +186,27 @@ function main() {
         //         reason: sqcResult.reason
         //     }
         // }
-
-
     }
 
-    // 根据SQC和其它成本bill，计算阿米巴余额
+    console.log('---------------- personnels SQC ----------------')
+    console.log(personnelsSQC);
+
+    console.log('---------------- amoeba SQC ----------------')
+    const amoebasResult: {[name:string]:number} = {};
+    for (const amoebaName in amoebas) {
+        const amoeba = amoebas[amoebaName];
+        for (const memberName of amoeba.members) {
+            const personSQC = personnelsSQC[memberName] || 0;
+            amoebasResult[amoebaName] = (amoebasResult[amoebaName] || 0) + personSQC;
+        }
+    }
+    console.log(amoebasResult);
+
+    // 根据SQC和其它成本bill，计算成员SQC、阿米巴余额、阿米巴余额
+    // for ( const sqcR of sqcResultsList) {
+
+    // }
+
 
     // 生成报告
 

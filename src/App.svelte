@@ -416,7 +416,7 @@
           </label>
         </td>
         <td>
-          <select name="contractModel" bind:value={contractModel}>
+          <select name="contractModel" bind:value={contractModel} disabled>
             {#each contractModels as cm}
               <option value={cm.id}>
                 {cm.text}

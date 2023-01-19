@@ -1,4 +1,4 @@
-import { PersonnelType, PersonnelRole, Lead, Customer, Contract, Personnel, Payment, SQCResult, AmoebaBill, getSalesCommissionRate, ContractType } from './autopilot';
+import { PersonnelType, AmoebaType, PersonnelRole, Lead, Customer, Contract, Personnel, Payment, SQCResult, AmoebaBill, getSalesCommissionRate, ContractType } from './autopilot';
 import * as lib from './autopilot';
 
 
@@ -101,21 +101,24 @@ const payments: {[key: string]: Payment} = {
 // Amoeba
 export const amoebas = {
     'ent': {
-        type: PersonnelType.Employee,
+        type: AmoebaType.InHouse,
         members: [
             'amen',
             'bmen',
         ]
     },
     'sme': {
-        type: PersonnelType.Employee,
+        type: AmoebaType.InHouse,
         members: [
             'cmen',
             'dmen',
             'emen',
             'fmen',
         ]
-
+    },
+    'bonuspool': {
+        type: AmoebaType.BonusPool,
+        members: [],
     }
 }
 
@@ -157,7 +160,7 @@ function main() {
         const partnerSales = lead.partnerSales;
 
         console.log('================================================================');
-        console.log(`Contract合同： tcv: ${contract.tcv}, period: ${contract.period}`)
+        console.log(`Contract合同： tcv: ${contract.tcv}, period: ${contract.period}, type: ${contract.type}`)
         console.log(`Payment回款： ${payment.amount}`)
         console.log(`Sourcer线索开发： ${lead.sourcer.type}, ${lead.sourcer.role}`);
         console.log(`Sales销售： ${lead.sales.type}, ${lead.sales.role}`);
@@ -200,12 +203,15 @@ function main() {
             amoebasResult[amoebaName] = (amoebasResult[amoebaName] || 0) + personSQC;
         }
     }
+
+    
+    // 根据SQC和其它成本bill，计算成员SQC、阿米巴余额、阿米巴余额
+    for ( const sqcR of sqcResultsList) {
+        amoebasResult['bonuspool'] =  ( amoebasResult['bonuspool'] || 0) + sqcR.bonusPool
+    }
+
     console.log(amoebasResult);
 
-    // 根据SQC和其它成本bill，计算成员SQC、阿米巴余额、阿米巴余额
-    // for ( const sqcR of sqcResultsList) {
-
-    // }
 
 
     // 生成报告

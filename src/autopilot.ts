@@ -76,10 +76,28 @@ enum PeriodType {
 }
 
 /**
+ * 阿米巴类型
+ */
+export enum AmoebaType {
+  /**
+   * 内部阿米巴
+   */
+  InHouse,
+  /**
+   * 外部阿米巴
+   */
+  Outside,
+  /**
+   * 奖金池
+   */
+  BonusPool,
+}
+
+/**
  * 阿米巴
  */
 export interface Amoeba {
-    type: PersonnelType;
+    type: AmoebaType;
     members: Personnel[];
 }
 

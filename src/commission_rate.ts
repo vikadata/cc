@@ -32,7 +32,7 @@ const commissionRate: {[key: string]: {text: string, rate: number}} = {
   // },
   "employee-sales-renewal": {
     text: '全职雇员-销售-续费',
-    rate: 0.12,
+    rate: 0.13,
   },
 
   // ku users service

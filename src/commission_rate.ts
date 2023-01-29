@@ -18,7 +18,7 @@ const commissionRate: {[key: string]: {text: string, rate: number}} = {
   // },
   "employee-sourcer-renewal": {
     text: '全职雇员-线索开发-续费',
-    rate: 0.03
+    rate: 0.02
   },
   // kp
   // "employee-sales": 0.16,
@@ -32,7 +32,7 @@ const commissionRate: {[key: string]: {text: string, rate: number}} = {
   // },
   "employee-sales-renewal": {
     text: '全职雇员-销售-续费',
-    rate: 0.13,
+    rate: 0.14,
   },
 
   // ku users service

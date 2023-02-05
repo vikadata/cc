@@ -124,7 +124,7 @@
    * how many payment get back?
    * 回款
    */
-  $: payment = 3000;
+  $: payment = 8000;
 
   /**
    * Payment Margin

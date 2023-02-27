@@ -117,17 +117,17 @@ export interface AmoebaBill {
  */
 export class SQCResult {
 
-    sourcerSQC: number;
-    salesSQC: number;
-    serviceSQC: number;
-    partnerSalesSQC: number;
-    bonusPool: number;
-    compensation: number;
+    sourcerSQC!: number;
+    salesSQC!: number;
+    serviceSQC!: number;
+    partnerSalesSQC!: number;
+    bonusPool!: number;
+    compensation!: number;
 
     /**
      * 销售人类型
      */
-    salesType: PersonnelType;
+    salesType!: PersonnelType;
   
     constructor(source: Partial<SQCResult>) {
         Object.assign(this, source);
@@ -174,11 +174,11 @@ export function getSQCResult(payment: Payment, compensation: number = 0): SQCRes
 
   let salesSQC = 0;
   if (salesType == PersonnelType.Partner) {
-      salesSQC = paymentMargin * getSalesCommissionRate(salesType, contractType, partnerLevel); // partner按回款、contractor按SQR
+      salesSQC = paymentMargin * getSalesCommissionRate(salesType, contractType, partnerLevel as string); // partner按回款、contractor按SQR
     } else if (salesType == PersonnelType.Employee) {
-      salesSQC = sqrOfProduct * getSalesCommissionRate(salesType, contractType, partnerLevel);
+      salesSQC = sqrOfProduct * getSalesCommissionRate(salesType, contractType, partnerLevel as string);
     } else {
-      salesSQC = sqrOfProduct * getSalesCommissionRate(salesType, contractType, partnerLevel);
+      salesSQC = sqrOfProduct * getSalesCommissionRate(salesType, contractType, partnerLevel as string);
     }
 
   // start calc the SQC
@@ -257,7 +257,7 @@ export const getSalesCommissionRate = (salesType: string, contractType: string, 
 /**
  * 根据职员、岗位、额外属性，提取提成率对象
  */
-export const getCommissionRateObject = (personnelType: string, role, extra = undefined) => {
+export const getCommissionRateObject = (personnelType: string, role, extra?: string) => {
   const key =
     extra === undefined
       ? `${personnelType}-${role}`
@@ -269,7 +269,7 @@ export const getCommissionRateObject = (personnelType: string, role, extra = und
 /**
  * 根据职员、岗位、额外属性，提取提成率对象
  */
-export const getCommissionRate = (personnelType, role, extra = undefined) => {
+export const getCommissionRate = (personnelType, role, extra?: string) => {
   const obj = getCommissionRateObject(personnelType, role, extra);
   if (obj) return obj.rate;
   return 0;

@@ -1,0 +1,17 @@
+{
+  "packageId": "wpkvMsrbKKuKo",
+  "spaceId": "spcXJh730ruBm",
+  "entry": "./src/index.tsx",
+  "name": {
+    "zh-CN": "SQC计算器",
+    "en-US": "SQC计算器"
+  },
+  "icon": "./package_icon.jpg",
+  "cover": "./cover.png",
+  "authorIcon": "./author_icon.png",
+  "description": {
+    "zh-CN": "SQC计算器 的描述",
+    "en-US": "SQC计算器 description"
+  },
+  "sandbox": true
+}
